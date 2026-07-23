@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#FAF8F3" />
+<title>The Ledger — Nielsen Household</title>
+<style>
+  :root{
+    --ink:#12232E; --ink-soft:#40525C; --paper:#FAF8F3; --card:#FFFFFF;
+    --line:#E7E1D5; --teal:#0E7C7B; --teal-soft:#E3F0EF;
+    --gold:#B8892B; --gold-soft:#F6EFDD; --slate:#5A6B78; --slate-soft:#EDF0F2;
+    --green:#157F5B; --green-soft:#E4F1EB; --rust:#B4553B; --rust-soft:#F6E7E1;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:940px;margin:0 auto;padding:26px 18px 70px}
+  .eyebrow{font-size:11.5px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-soft);font-weight:700}
+  h1{font-size:25px;font-weight:800;letter-spacing:-.5px;margin:2px 0 0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px}
+  .row{display:flex;align-items:center}
+  .between{justify-content:space-between}
+  .wrapf{flex-wrap:wrap}
+  .num{font-variant-numeric:tabular-nums}
+  button{font-family:inherit}
+  .btn{
+    display:inline-flex;align-items:center;gap:6px;padding:8px 13px;font-size:13px;
+    font-weight:700;border:1px solid var(--line);border-radius:8px;background:var(--card);
+    color:var(--ink);cursor:pointer;
+  }
+  .btn:disabled{cursor:not-allowed;opacity:.6}
+  .tag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:5px;white-space:nowrap}
+  .env-head{
+    display:flex;align-items:center;justify-content:space-between;width:100%;
+    padding:13px 16px;background:none;border:none;cursor:pointer;text-align:left;gap:10px;
+  }
+  .env-name{font-weight:700;font-size:15.5px}
+  .env-total{font-weight:800;font-size:16px;white-space:nowrap}
+  .place{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:8px 16px 8px 38px;border-top:1px solid var(--paper);
+  }
+  .place-name{font-size:12.5px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+  .muted{font-size:11.5px;color:var(--ink-soft)}
+  input{
+    width:100%;padding:10px 12px;font-size:16px;border-radius:9px;border:1px solid var(--line);
+    margin-bottom:14px;background:var(--paper);color:var(--ink);font-family:inherit;
+  }
+  .label{font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px}
+  .primary{
+    width:100%;padding:12px;border-radius:9px;border:none;background:var(--teal);
+    color:#fff;font-weight:700;font-size:14.5px;cursor:pointer;
+  }
+  .primary:disabled{background:var(--line);cursor:not-allowed}
+  .alert{background:var(--rust-soft);border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13px;line-height:1.6}
+  .bar{height:7px;background:var(--paper);border-radius:4px;overflow:hidden}
+  .bar > i{display:block;height:100%;background:var(--gold);border-radius:4px}
+  .center{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .hidden{display:none}
+  @media (max-width:520px){
+    h1{font-size:22px}
+    .place{padding-left:28px}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="login" class="center">
+  <div class="card" style="padding:30px;width:100%;max-width:380px">
+    <div class="eyebrow">Nielsen Household</div>
+    <h1 style="font-size:26px;margin-bottom:22px">The Ledger</h1>
+    <div class="label">Email</div>
+    <input id="email" type="email" autocomplete="username" placeholder="you@example.com" />
+    <div class="label">Password</div>
+    <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" />
+    <div id="authErr" class="alert hidden"></div>
+    <button id="signin" class="primary">Sign in</button>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app" class="wrap hidden">
+  <div class="row between wrapf" style="gap:12px;margin-bottom:18px">
+    <div>
+      <div class="eyebrow">Nielsen Household</div>
+      <h1>Envelopes</h1>
+    </div>
+    <div class="row" style="gap:8px">
+      <button id="refresh" class="btn">Refresh</button>
+      <button id="signout" class="btn" style="color:var(--ink-soft)">Sign out</button>
+    </div>
+  </div>
+
+  <div class="card" style="padding:20px 24px;margin-bottom:18px">
+    <div class="eyebrow" style="letter-spacing:1.5px">Total across all envelopes</div>
+    <div id="grand" class="num" style="font-size:38px;font-weight:800;letter-spacing:-1px;line-height:1.15">—</div>
+    <div id="grandSub" class="row wrapf" style="gap:18px;margin-top:6px"></div>
+  </div>
+
+  <div id="loadErr" class="alert hidden"></div>
+  <div id="list"></div>
+
+  <p class="muted" style="margin-top:24px;line-height:1.6">
+    Live from your Supabase project. Percentage-based holdings are computed from the account's
+    stored balance, so they never go stale — those carry a “computed” tag.
+  </p>
+</div>
+
+<script>
+const SUPABASE_URL = "https://bhifplcdxuunclzrfnoi.supabase.co";
+const SUPABASE_KEY = "sb_publishable_fVibzJZbwNWX-14EgTRIUw_xVArtTb7";
+
+const SELECT =
+  "id,name,type,target_amount,target_date,note,status," +
+  "holdings(id,amount,percent_of_account," +
+  "accounts(id,name,balance,is_locked,locked_until,institutions(name,color)))";
+
+const TYPE_META = {
+  flow:    {label:"Flow",    c:"var(--teal)",  b:"var(--teal-soft)"},
+  sinking: {label:"Reserve", c:"var(--slate)", b:"var(--slate-soft)"},
+  goal:    {label:"Goal",    c:"var(--gold)",  b:"var(--gold-soft)"},
+  floor:   {label:"Floor",   c:"var(--green)", b:"var(--green-soft)"},
+  project: {label:"Project", c:"var(--rust)",  b:"var(--rust-soft)"}
+};
+
+const $ = (id) => document.getElementById(id);
+const fmt  = (n) => (n||0).toLocaleString("en-US",{style:"currency",currency:"USD"});
+const fmt0 = (n) => (n||0).toLocaleString("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0});
+const esc  = (s) => String(s==null?"":s).replace(/[&<>"']/g, m =>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+
+let token = null;
+let openSet = {};
+
+/* ---------------- auth ---------------- */
+function saveToken(t){ token = t; try{ localStorage.setItem("ledger_token", t); }catch(e){} }
+function clearToken(){ token = null; try{ localStorage.removeItem("ledger_token"); }catch(e){} }
+function loadToken(){ try{ return localStorage.getItem("ledger_token"); }catch(e){ return null; } }
+
+async function signIn(){
+  const email = $("email").value.trim();
+  const password = $("password").value;
+  if(!email || !password) return;
+  const btn = $("signin");
+  btn.disabled = true; btn.textContent = "Signing in…";
+  hide("authErr");
+  try{
+    const res = await fetch(SUPABASE_URL + "/auth/v1/token?grant_type=password", {
+      method:"POST",
+      headers:{ apikey: SUPABASE_KEY, "Content-Type":"application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error_description || data.msg || data.error || "Sign-in failed");
+    saveToken(data.access_token);
+    $("password").value = "";
+    showApp();
+    await load();
+  }catch(err){
+    showErr("authErr", esc(err.message) +
+      '<div class="muted" style="margin-top:6px">If no user exists yet: Supabase → Authentication → Add user.</div>');
+  }finally{
+    btn.disabled = false; btn.textContent = "Sign in";
+  }
+}
+
+function signOut(){
+  clearToken();
+  $("app").classList.add("hidden");
+  $("login").classList.remove("hidden");
+  $("list").innerHTML = "";
+}
+
+function showApp(){
+  $("login").classList.add("hidden");
+  $("app").classList.remove("hidden");
+}
+
+function hide(id){ $(id).classList.add("hidden"); }
+function showErr(id, html){ const el=$(id); el.innerHTML=html; el.classList.remove("hidden"); }
+
+/* ---------------- data ---------------- */
+async function load(){
+  const btn = $("refresh");
+  btn.disabled = true; btn.textContent = "Loading…";
+  hide("loadErr");
+  try{
+    const url = SUPABASE_URL + "/rest/v1/envelopes?select=" +
+      encodeURIComponent(SELECT) + "&order=name.asc";
+    const res = await fetch(url, {
+      headers:{ apikey: SUPABASE_KEY, Authorization: "Bearer " + token }
+    });
+    if(res.status === 401){ clearToken(); signOut(); return; }
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.message || data.hint || "Could not load envelopes");
+    render(data);
+  }catch(err){
+    showErr("loadErr",
+      '<div style="font-weight:700;color:var(--rust);margin-bottom:6px">Couldn\'t load</div>' +
+      '<div style="margin-bottom:8px">' + esc(err.message) + '</div>' +
+      '<div class="muted">If this mentions permission or a missing relation, the tables aren\'t ' +
+      'exposed to the API yet — run the grant statements in the SQL editor, then Refresh.</div>');
+  }finally{
+    btn.disabled = false; btn.textContent = "Refresh";
+  }
+}
+
+/* --------------- compute + render --------------- */
+function compute(envelopes){
+  return envelopes
+    .filter(e => e.status !== "closed")
+    .map(e => {
+      let total=0, liquid=0, locked=0, hasPct=false;
+      const places = (e.holdings||[]).map(h => {
+        const a = h.accounts || {};
+        const isPct = h.percent_of_account != null;
+        if(isPct) hasPct = true;
+        const value = isPct
+          ? ((Number(a.balance)||0) * Number(h.percent_of_account))/100
+          : Number(h.amount||0);
+        total += value;
+        if(a.is_locked) locked += value; else liquid += value;
+        return {
+          value, isPct, pct:h.percent_of_account,
+          missing: isPct && (a.balance == null),
+          acct: a.name || "(unknown account)",
+          inst: (a.institutions && a.institutions.name) || "",
+          color: (a.institutions && a.institutions.color) || "#5A6B78",
+          locked: !!a.is_locked, until: a.locked_until
+        };
+      }).sort((x,y)=> y.value - x.value);
+      return Object.assign({}, e, {total, liquid, locked, hasPct, places});
+    })
+    .sort((a,b)=> b.total - a.total);
+}
+
+function render(raw){
+  const rows = compute(raw);
+  const grand = rows.reduce((s,r)=>s+r.total,0);
+  const gl = rows.reduce((s,r)=>s+r.liquid,0);
+  const gk = rows.reduce((s,r)=>s+r.locked,0);
+
+  $("grand").textContent = fmt(grand);
+  $("grandSub").innerHTML =
+    '<span style="font-size:13px;color:var(--green);font-weight:600">'+fmt(gl)+' liquid</span>' +
+    '<span style="font-size:13px;color:var(--slate);font-weight:600">'+fmt(gk)+' in CDs</span>' +
+    '<span style="font-size:13px;color:var(--ink-soft)">'+rows.length+' envelopes</span>';
+
+  if(!rows.length){
+    $("list").innerHTML = '<div class="card" style="padding:24px;font-size:13.5px;color:var(--ink-soft)">' +
+      'Signed in, but no envelopes came back. That usually means row-level security is filtering ' +
+      'everything out, or the envelopes table is empty.</div>';
+    return;
+  }
+
+  $("list").innerHTML = rows.map(e => {
+    const m = TYPE_META[e.type] || TYPE_META.flow;
+    const isOpen = !!openSet[e.id];
+    const pct = (e.type==="goal" && e.target_amount)
+      ? Math.min(100, (e.total/Number(e.target_amount))*100) : null;
+
+    const head =
+      '<button class="env-head" data-id="'+esc(e.id)+'">' +
+        '<span class="row wrapf" style="gap:9px;min-width:0">' +
+          '<span style="color:var(--ink-soft)">'+(isOpen?"▾":"▸")+'</span>' +
+          '<span class="env-name">'+esc(e.name)+'</span>' +
+          '<span class="tag" style="color:'+m.c+';background:'+m.b+'">'+m.label+'</span>' +
+          (e.places.length>1 ? '<span class="muted">· '+e.places.length+' places</span>' : '') +
+          (e.hasPct ? '<span class="tag" style="color:var(--gold);background:var(--gold-soft)">computed</span>' : '') +
+        '</span>' +
+        '<span class="env-total num">'+fmt(e.total)+'</span>' +
+      '</button>';
+
+    const goal = pct===null ? '' :
+      '<div style="padding:0 16px 12px">' +
+        '<div class="bar"><i style="width:'+pct.toFixed(0)+'%"></i></div>' +
+        '<div class="muted" style="margin-top:5px">'+pct.toFixed(0)+'% of '+fmt0(e.target_amount)+
+        (e.target_date? ' · by '+esc(e.target_date):'')+'</div>' +
+      '</div>';
+
+    const body = !isOpen ? '' :
+      '<div style="border-top:1px solid var(--paper)">' +
+        (e.note ? '<div style="padding:9px 16px 4px;font-size:12px;color:var(--ink-soft);font-style:italic;line-height:1.5">'+esc(e.note)+'</div>' : '') +
+        e.places.map(p =>
+          '<div class="place">' +
+            '<span class="row" style="gap:8px;min-width:0">' +
+              '<span class="dot" style="background:'+esc(p.color)+'"></span>' +
+              '<span class="place-name">'+esc(p.inst)+' · '+esc(p.acct)+'</span>' +
+              (p.locked ? '<span class="tag" style="color:var(--slate);background:var(--slate-soft)">🔒'+(p.until?' '+esc(p.until):'')+'</span>' : '') +
+              (p.isPct ? '<span class="tag" style="color:var(--gold);background:var(--gold-soft)">'+esc(p.pct)+'% of account</span>' : '') +
+            '</span>' +
+            '<span class="num" style="font-size:13px;font-weight:600;white-space:nowrap;color:'+(p.missing?'var(--rust)':'var(--ink)')+'">' +
+              (p.missing ? 'needs balance' : fmt(p.value)) +
+            '</span>' +
+          '</div>'
+        ).join('') +
+        (e.locked>0 ? '<div class="muted" style="padding:8px 16px 12px 38px">'+fmt(e.liquid)+' liquid · '+fmt(e.locked)+' in CDs — information, not a warning.</div>' : '') +
+      '</div>';
+
+    return '<div class="card" style="margin-bottom:9px;overflow:hidden">'+head+goal+body+'</div>';
+  }).join('');
+
+  document.querySelectorAll(".env-head").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-id");
+      openSet[id] = !openSet[id];
+      render(raw);
+    });
+  });
+}
+
+/* ---------------- wire up ---------------- */
+$("signin").addEventListener("click", signIn);
+$("refresh").addEventListener("click", load);
+$("signout").addEventListener("click", signOut);
+["email","password"].forEach(id =>
+  $(id).addEventListener("keydown", e => { if(e.key==="Enter") signIn(); }));
+
+(function init(){
+  const t = loadToken();
+  if(t){ token = t; showApp(); load(); }
+})();
+</script>
+</body>
+</html>
