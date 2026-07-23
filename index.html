@@ -13,80 +13,90 @@
     --green:#157F5B; --green-soft:#E4F1EB; --rust:#B4553B; --rust-soft:#F6E7E1;
   }
   *{box-sizing:border-box}
-  body{
-    margin:0; background:var(--paper); color:var(--ink);
+  body{margin:0;background:var(--paper);color:var(--ink);
     font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-    -webkit-font-smoothing:antialiased;
-  }
-  .wrap{max-width:940px;margin:0 auto;padding:26px 18px 70px}
-  .eyebrow{font-size:11.5px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-soft);font-weight:700}
-  h1{font-size:25px;font-weight:800;letter-spacing:-.5px;margin:2px 0 0}
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 18px 70px}
+  .eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-soft);font-weight:700}
+  h1{font-size:24px;font-weight:800;letter-spacing:-.5px;margin:2px 0 0}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px}
   .row{display:flex;align-items:center}
   .between{justify-content:space-between}
   .wrapf{flex-wrap:wrap}
   .num{font-variant-numeric:tabular-nums}
   button{font-family:inherit}
-  .btn{
-    display:inline-flex;align-items:center;gap:6px;padding:8px 13px;font-size:13px;
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 13px;font-size:13px;
     font-weight:700;border:1px solid var(--line);border-radius:8px;background:var(--card);
-    color:var(--ink);cursor:pointer;
-  }
+    color:var(--ink);cursor:pointer}
   .btn:disabled{cursor:not-allowed;opacity:.6}
-  .tag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:5px;white-space:nowrap}
-  .env-head{
-    display:flex;align-items:center;justify-content:space-between;width:100%;
-    padding:13px 16px;background:none;border:none;cursor:pointer;text-align:left;gap:10px;
-  }
-  .env-name{font-weight:700;font-size:15.5px}
-  .env-total{font-weight:800;font-size:16px;white-space:nowrap}
-  .place{
-    display:flex;align-items:center;justify-content:space-between;gap:10px;
-    padding:8px 16px 8px 38px;border-top:1px solid var(--paper);
-  }
-  .place-name{font-size:12.5px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
-  .muted{font-size:11.5px;color:var(--ink-soft)}
-  input{
-    width:100%;padding:10px 12px;font-size:16px;border-radius:9px;border:1px solid var(--line);
-    margin-bottom:14px;background:var(--paper);color:var(--ink);font-family:inherit;
-  }
+  .chip{padding:6px 14px;font-size:12.5px;font-weight:700;border:1px solid var(--line);
+    border-radius:20px;background:var(--card);color:var(--ink-soft);cursor:pointer}
+  .chip.on{background:var(--teal);border-color:var(--teal);color:#fff}
+  .tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;white-space:nowrap}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+  .span2{grid-column:1 / -1}
+  @media (max-width:820px){ .grid{grid-template-columns:1fr} .span2{grid-column:auto} }
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+    padding:14px 16px;border-bottom:1px solid var(--line)}
+  .panel-title{font-size:15px;font-weight:800;letter-spacing:-.2px}
+  .panel-total{font-size:15px;font-weight:800}
+  .cat{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-soft);
+    font-weight:700;padding:11px 16px 5px;background:var(--paper)}
+  .env{border-top:1px solid var(--paper)}
+  .env-head{display:flex;align-items:center;justify-content:space-between;width:100%;
+    padding:9px 16px;background:none;border:none;cursor:pointer;text-align:left;gap:10px}
+  .env-head:hover{background:var(--paper)}
+  .env-name{font-weight:650;font-size:13.5px}
+  .env-total{font-weight:800;font-size:14px;white-space:nowrap}
+  .place{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:6px 16px 6px 32px;border-top:1px solid var(--paper);background:var(--paper)}
+  .place-name{font-size:11.5px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dot{width:6px;height:6px;border-radius:2px;flex-shrink:0}
+  .amt{font-size:12.5px;font-weight:650;white-space:nowrap;border:1px dashed transparent;
+    border-radius:6px;padding:2px 6px;cursor:text}
+  .amt:hover{border-color:var(--line);background:var(--card)}
+  .amt-in{width:104px;font-size:12.5px;padding:3px 6px;border:1px solid var(--teal);
+    border-radius:6px;font-family:inherit;text-align:right;background:var(--card);color:var(--ink)}
+  .muted{font-size:11px;color:var(--ink-soft)}
+  input.field{width:100%;padding:10px 12px;font-size:16px;border-radius:9px;
+    border:1px solid var(--line);margin-bottom:14px;background:var(--paper);
+    color:var(--ink);font-family:inherit}
   .label{font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px}
-  .primary{
-    width:100%;padding:12px;border-radius:9px;border:none;background:var(--teal);
-    color:#fff;font-weight:700;font-size:14.5px;cursor:pointer;
-  }
+  .primary{width:100%;padding:12px;border-radius:9px;border:none;background:var(--teal);
+    color:#fff;font-weight:700;font-size:14.5px;cursor:pointer}
   .primary:disabled{background:var(--line);cursor:not-allowed}
-  .alert{background:var(--rust-soft);border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13px;line-height:1.6}
-  .bar{height:7px;background:var(--paper);border-radius:4px;overflow:hidden}
-  .bar > i{display:block;height:100%;background:var(--gold);border-radius:4px}
+  .alert{background:var(--rust-soft);border-radius:12px;padding:14px 16px;margin-bottom:16px;
+    font-size:13px;line-height:1.6}
+  .bar{height:5px;background:var(--card);border-radius:3px;overflow:hidden;margin:0 16px 8px}
+  .bar > i{display:block;height:100%;background:var(--gold)}
   .center{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
   .hidden{display:none}
-  @media (max-width:520px){
-    h1{font-size:22px}
-    .place{padding-left:28px}
-  }
+  #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);
+    color:#fff;padding:9px 18px;border-radius:10px;font-size:13.5px;font-weight:600;
+    box-shadow:0 6px 24px rgba(0,0,0,.18);opacity:0;transition:opacity .2s;pointer-events:none}
+  #toast.show{opacity:1}
 </style>
 </head>
 <body>
 
-<!-- ================= LOGIN ================= -->
 <div id="login" class="center">
   <div class="card" style="padding:30px;width:100%;max-width:380px">
     <div class="eyebrow">Nielsen Household</div>
     <h1 style="font-size:26px;margin-bottom:22px">The Ledger</h1>
     <div class="label">Email</div>
-    <input id="email" type="email" autocomplete="username" placeholder="you@example.com" />
+    <input id="email" class="field" type="email" autocomplete="username" placeholder="you@example.com" />
     <div class="label">Password</div>
-    <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" />
+    <input id="password" class="field" type="password" autocomplete="current-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" />
     <div id="authErr" class="alert hidden"></div>
     <button id="signin" class="primary">Sign in</button>
   </div>
 </div>
 
-<!-- ================= APP ================= -->
 <div id="app" class="wrap hidden">
-  <div class="row between wrapf" style="gap:12px;margin-bottom:18px">
+  <div class="row between wrapf" style="gap:12px;margin-bottom:14px">
     <div>
       <div class="eyebrow">Nielsen Household</div>
       <h1>Envelopes</h1>
@@ -97,234 +107,283 @@
     </div>
   </div>
 
-  <div class="card" style="padding:20px 24px;margin-bottom:18px">
-    <div class="eyebrow" style="letter-spacing:1.5px">Total across all envelopes</div>
-    <div id="grand" class="num" style="font-size:38px;font-weight:800;letter-spacing:-1px;line-height:1.15">—</div>
-    <div id="grandSub" class="row wrapf" style="gap:18px;margin-top:6px"></div>
+  <div class="card" style="padding:16px 20px;margin-bottom:14px">
+    <div class="row between wrapf" style="gap:14px">
+      <div>
+        <div class="eyebrow" style="letter-spacing:1.4px">Showing</div>
+        <div id="grand" class="num" style="font-size:31px;font-weight:800;letter-spacing:-.8px;line-height:1.2">&mdash;</div>
+        <div id="grandSub" class="row wrapf" style="gap:14px;margin-top:3px"></div>
+      </div>
+      <div class="row wrapf" style="gap:6px">
+        <button class="chip on" data-view="all">Everything</button>
+        <button class="chip" data-view="Jared">Jared</button>
+        <button class="chip" data-view="Kayla">Kayla</button>
+        <button class="chip" data-view="Joint">Shared</button>
+      </div>
+    </div>
   </div>
 
   <div id="loadErr" class="alert hidden"></div>
-  <div id="list"></div>
+  <div id="board" class="grid"></div>
 
-  <p class="muted" style="margin-top:24px;line-height:1.6">
-    Live from your Supabase project. Percentage-based holdings are computed from the account's
-    stored balance, so they never go stale — those carry a “computed” tag.
+  <p class="muted" style="margin-top:22px;line-height:1.6">
+    Click any amount to edit it &mdash; saving also records a dated snapshot, so history is never
+    overwritten. Percentage-based holdings edit the account balance instead, and their share
+    recomputes automatically.
   </p>
 </div>
+
+<div id="toast"></div>
 
 <script>
 const SUPABASE_URL = "https://bhifplcdxuunclzrfnoi.supabase.co";
 const SUPABASE_KEY = "sb_publishable_fVibzJZbwNWX-14EgTRIUw_xVArtTb7";
 
 const SELECT =
-  "id,name,type,target_amount,target_date,note,status," +
+  "id,name,type,owner,category,target_amount,target_date,note,status," +
   "holdings(id,amount,percent_of_account," +
   "accounts(id,name,balance,is_locked,locked_until,institutions(name,color)))";
 
 const TYPE_META = {
-  flow:    {label:"Flow",    c:"var(--teal)",  b:"var(--teal-soft)"},
-  sinking: {label:"Reserve", c:"var(--slate)", b:"var(--slate-soft)"},
-  goal:    {label:"Goal",    c:"var(--gold)",  b:"var(--gold-soft)"},
-  floor:   {label:"Floor",   c:"var(--green)", b:"var(--green-soft)"},
-  project: {label:"Project", c:"var(--rust)",  b:"var(--rust-soft)"}
+  flow:{label:"Flow",c:"var(--teal)",b:"var(--teal-soft)"},
+  sinking:{label:"Reserve",c:"var(--slate)",b:"var(--slate-soft)"},
+  goal:{label:"Goal",c:"var(--gold)",b:"var(--gold-soft)"},
+  floor:{label:"Floor",c:"var(--green)",b:"var(--green-soft)"},
+  project:{label:"Project",c:"var(--rust)",b:"var(--rust-soft)"}
 };
+const CAT_ORDER = ["Daily","Reserves","Goals","Giving","Retirement","Long Term"];
 
-const $ = (id) => document.getElementById(id);
-const fmt  = (n) => (n||0).toLocaleString("en-US",{style:"currency",currency:"USD"});
-const fmt0 = (n) => (n||0).toLocaleString("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0});
-const esc  = (s) => String(s==null?"":s).replace(/[&<>"']/g, m =>
-  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const $ = function(id){ return document.getElementById(id); };
+const fmt  = function(n){ return (n||0).toLocaleString("en-US",{style:"currency",currency:"USD"}); };
+const esc  = function(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(m){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]; }); };
 
-let token = null;
-let openSet = {};
+var token=null, raw=[], openSet={}, view="all", editing=false;
 
-/* ---------------- auth ---------------- */
-function saveToken(t){ token = t; try{ localStorage.setItem("ledger_token", t); }catch(e){} }
-function clearToken(){ token = null; try{ localStorage.removeItem("ledger_token"); }catch(e){} }
-function loadToken(){ try{ return localStorage.getItem("ledger_token"); }catch(e){ return null; } }
+function saveToken(t){ token=t; try{ localStorage.setItem("ledger_token",t); }catch(e){} }
+function clearToken(){ token=null; try{ localStorage.removeItem("ledger_token"); }catch(e){} }
+
+function headers(extra){
+  var h={apikey:SUPABASE_KEY,Authorization:"Bearer "+token,"Content-Type":"application/json"};
+  if(extra) for(var k in extra) h[k]=extra[k];
+  return h;
+}
+
+function toast(msg){
+  var t=$("toast"); t.textContent=msg; t.classList.add("show");
+  setTimeout(function(){ t.classList.remove("show"); },2200);
+}
 
 async function signIn(){
-  const email = $("email").value.trim();
-  const password = $("password").value;
-  if(!email || !password) return;
-  const btn = $("signin");
-  btn.disabled = true; btn.textContent = "Signing in…";
-  hide("authErr");
+  var email=$("email").value.trim(), password=$("password").value;
+  if(!email||!password) return;
+  var b=$("signin"); b.disabled=true; b.textContent="Signing in\u2026"; $("authErr").classList.add("hidden");
   try{
-    const res = await fetch(SUPABASE_URL + "/auth/v1/token?grant_type=password", {
-      method:"POST",
-      headers:{ apikey: SUPABASE_KEY, "Content-Type":"application/json" },
-      body: JSON.stringify({ email, password })
-    });
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.error_description || data.msg || data.error || "Sign-in failed");
-    saveToken(data.access_token);
-    $("password").value = "";
-    showApp();
+    var r=await fetch(SUPABASE_URL+"/auth/v1/token?grant_type=password",{
+      method:"POST",headers:{apikey:SUPABASE_KEY,"Content-Type":"application/json"},
+      body:JSON.stringify({email:email,password:password})});
+    var d=await r.json();
+    if(!r.ok) throw new Error(d.error_description||d.msg||d.error||"Sign-in failed");
+    saveToken(d.access_token); $("password").value="";
+    $("login").classList.add("hidden"); $("app").classList.remove("hidden");
     await load();
-  }catch(err){
-    showErr("authErr", esc(err.message) +
-      '<div class="muted" style="margin-top:6px">If no user exists yet: Supabase → Authentication → Add user.</div>');
-  }finally{
-    btn.disabled = false; btn.textContent = "Sign in";
-  }
+  }catch(e){
+    var el=$("authErr");
+    el.innerHTML=esc(e.message)+'<div class="muted" style="margin-top:6px">No user yet? Supabase &rarr; Authentication &rarr; Add user.</div>';
+    el.classList.remove("hidden");
+  }finally{ b.disabled=false; b.textContent="Sign in"; }
 }
 
 function signOut(){
-  clearToken();
-  $("app").classList.add("hidden");
-  $("login").classList.remove("hidden");
-  $("list").innerHTML = "";
+  clearToken(); $("app").classList.add("hidden"); $("login").classList.remove("hidden"); $("board").innerHTML="";
 }
 
-function showApp(){
-  $("login").classList.add("hidden");
-  $("app").classList.remove("hidden");
-}
-
-function hide(id){ $(id).classList.add("hidden"); }
-function showErr(id, html){ const el=$(id); el.innerHTML=html; el.classList.remove("hidden"); }
-
-/* ---------------- data ---------------- */
 async function load(){
-  const btn = $("refresh");
-  btn.disabled = true; btn.textContent = "Loading…";
-  hide("loadErr");
+  var b=$("refresh"); b.disabled=true; b.textContent="Loading\u2026"; $("loadErr").classList.add("hidden");
   try{
-    const url = SUPABASE_URL + "/rest/v1/envelopes?select=" +
-      encodeURIComponent(SELECT) + "&order=name.asc";
-    const res = await fetch(url, {
-      headers:{ apikey: SUPABASE_KEY, Authorization: "Bearer " + token }
-    });
-    if(res.status === 401){ clearToken(); signOut(); return; }
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.message || data.hint || "Could not load envelopes");
-    render(data);
-  }catch(err){
-    showErr("loadErr",
-      '<div style="font-weight:700;color:var(--rust);margin-bottom:6px">Couldn\'t load</div>' +
-      '<div style="margin-bottom:8px">' + esc(err.message) + '</div>' +
-      '<div class="muted">If this mentions permission or a missing relation, the tables aren\'t ' +
-      'exposed to the API yet — run the grant statements in the SQL editor, then Refresh.</div>');
-  }finally{
-    btn.disabled = false; btn.textContent = "Refresh";
-  }
+    var r=await fetch(SUPABASE_URL+"/rest/v1/envelopes?select="+encodeURIComponent(SELECT)+"&order=name.asc",
+      {headers:headers()});
+    if(r.status===401){ signOut(); return; }
+    var d=await r.json();
+    if(!r.ok) throw new Error(d.message||d.hint||"Could not load");
+    raw=d; render();
+  }catch(e){
+    var el=$("loadErr");
+    el.innerHTML='<div style="font-weight:700;color:var(--rust);margin-bottom:6px">Couldn\'t load</div><div>'+esc(e.message)+'</div>';
+    el.classList.remove("hidden");
+  }finally{ b.disabled=false; b.textContent="Refresh"; }
 }
 
-/* --------------- compute + render --------------- */
-function compute(envelopes){
-  return envelopes
-    .filter(e => e.status !== "closed")
-    .map(e => {
-      let total=0, liquid=0, locked=0, hasPct=false;
-      const places = (e.holdings||[]).map(h => {
-        const a = h.accounts || {};
-        const isPct = h.percent_of_account != null;
-        if(isPct) hasPct = true;
-        const value = isPct
-          ? ((Number(a.balance)||0) * Number(h.percent_of_account))/100
-          : Number(h.amount||0);
-        total += value;
-        if(a.is_locked) locked += value; else liquid += value;
-        return {
-          value, isPct, pct:h.percent_of_account,
-          missing: isPct && (a.balance == null),
-          acct: a.name || "(unknown account)",
-          inst: (a.institutions && a.institutions.name) || "",
-          color: (a.institutions && a.institutions.color) || "#5A6B78",
-          locked: !!a.is_locked, until: a.locked_until
-        };
-      }).sort((x,y)=> y.value - x.value);
-      return Object.assign({}, e, {total, liquid, locked, hasPct, places});
-    })
-    .sort((a,b)=> b.total - a.total);
+async function saveAmount(holdingId, accountId, isPct, value){
+  try{
+    var today=new Date().toISOString().slice(0,10);
+    if(isPct){
+      var r=await fetch(SUPABASE_URL+"/rest/v1/accounts?id=eq."+accountId,{
+        method:"PATCH",headers:headers({Prefer:"return=minimal"}),
+        body:JSON.stringify({balance:value,balance_as_of:today})});
+      if(!r.ok) throw new Error("Save failed ("+r.status+")");
+    }else{
+      var r2=await fetch(SUPABASE_URL+"/rest/v1/holdings?id=eq."+holdingId,{
+        method:"PATCH",headers:headers({Prefer:"return=minimal"}),
+        body:JSON.stringify({amount:value})});
+      if(!r2.ok) throw new Error("Save failed ("+r2.status+")");
+      await fetch(SUPABASE_URL+"/rest/v1/snapshots",{
+        method:"POST",headers:headers({Prefer:"return=minimal"}),
+        body:JSON.stringify({holding_id:holdingId,amount:value,as_of:today})});
+    }
+    toast("Saved");
+    await load();
+  }catch(e){ toast(e.message); render(); }
 }
 
-function render(raw){
-  const rows = compute(raw);
-  const grand = rows.reduce((s,r)=>s+r.total,0);
-  const gl = rows.reduce((s,r)=>s+r.liquid,0);
-  const gk = rows.reduce((s,r)=>s+r.locked,0);
-
-  $("grand").textContent = fmt(grand);
-  $("grandSub").innerHTML =
-    '<span style="font-size:13px;color:var(--green);font-weight:600">'+fmt(gl)+' liquid</span>' +
-    '<span style="font-size:13px;color:var(--slate);font-weight:600">'+fmt(gk)+' in CDs</span>' +
-    '<span style="font-size:13px;color:var(--ink-soft)">'+rows.length+' envelopes</span>';
-
-  if(!rows.length){
-    $("list").innerHTML = '<div class="card" style="padding:24px;font-size:13.5px;color:var(--ink-soft)">' +
-      'Signed in, but no envelopes came back. That usually means row-level security is filtering ' +
-      'everything out, or the envelopes table is empty.</div>';
-    return;
-  }
-
-  $("list").innerHTML = rows.map(e => {
-    const m = TYPE_META[e.type] || TYPE_META.flow;
-    const isOpen = !!openSet[e.id];
-    const pct = (e.type==="goal" && e.target_amount)
-      ? Math.min(100, (e.total/Number(e.target_amount))*100) : null;
-
-    const head =
-      '<button class="env-head" data-id="'+esc(e.id)+'">' +
-        '<span class="row wrapf" style="gap:9px;min-width:0">' +
-          '<span style="color:var(--ink-soft)">'+(isOpen?"▾":"▸")+'</span>' +
-          '<span class="env-name">'+esc(e.name)+'</span>' +
-          '<span class="tag" style="color:'+m.c+';background:'+m.b+'">'+m.label+'</span>' +
-          (e.places.length>1 ? '<span class="muted">· '+e.places.length+' places</span>' : '') +
-          (e.hasPct ? '<span class="tag" style="color:var(--gold);background:var(--gold-soft)">computed</span>' : '') +
-        '</span>' +
-        '<span class="env-total num">'+fmt(e.total)+'</span>' +
-      '</button>';
-
-    const goal = pct===null ? '' :
-      '<div style="padding:0 16px 12px">' +
-        '<div class="bar"><i style="width:'+pct.toFixed(0)+'%"></i></div>' +
-        '<div class="muted" style="margin-top:5px">'+pct.toFixed(0)+'% of '+fmt0(e.target_amount)+
-        (e.target_date? ' · by '+esc(e.target_date):'')+'</div>' +
-      '</div>';
-
-    const body = !isOpen ? '' :
-      '<div style="border-top:1px solid var(--paper)">' +
-        (e.note ? '<div style="padding:9px 16px 4px;font-size:12px;color:var(--ink-soft);font-style:italic;line-height:1.5">'+esc(e.note)+'</div>' : '') +
-        e.places.map(p =>
-          '<div class="place">' +
-            '<span class="row" style="gap:8px;min-width:0">' +
-              '<span class="dot" style="background:'+esc(p.color)+'"></span>' +
-              '<span class="place-name">'+esc(p.inst)+' · '+esc(p.acct)+'</span>' +
-              (p.locked ? '<span class="tag" style="color:var(--slate);background:var(--slate-soft)">🔒'+(p.until?' '+esc(p.until):'')+'</span>' : '') +
-              (p.isPct ? '<span class="tag" style="color:var(--gold);background:var(--gold-soft)">'+esc(p.pct)+'% of account</span>' : '') +
-            '</span>' +
-            '<span class="num" style="font-size:13px;font-weight:600;white-space:nowrap;color:'+(p.missing?'var(--rust)':'var(--ink)')+'">' +
-              (p.missing ? 'needs balance' : fmt(p.value)) +
-            '</span>' +
-          '</div>'
-        ).join('') +
-        (e.locked>0 ? '<div class="muted" style="padding:8px 16px 12px 38px">'+fmt(e.liquid)+' liquid · '+fmt(e.locked)+' in CDs — information, not a warning.</div>' : '') +
-      '</div>';
-
-    return '<div class="card" style="margin-bottom:9px;overflow:hidden">'+head+goal+body+'</div>';
-  }).join('');
-
-  document.querySelectorAll(".env-head").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-id");
-      openSet[id] = !openSet[id];
-      render(raw);
-    });
+function compute(list){
+  return list.filter(function(e){ return e.status!=="closed"; }).map(function(e){
+    var total=0,liquid=0,locked=0,hasPct=false;
+    var places=(e.holdings||[]).map(function(h){
+      var a=h.accounts||{}, isPct=h.percent_of_account!=null;
+      if(isPct) hasPct=true;
+      var value=isPct?((Number(a.balance)||0)*Number(h.percent_of_account))/100:Number(h.amount||0);
+      total+=value;
+      if(a.is_locked) locked+=value; else liquid+=value;
+      return {hid:h.id,aid:a.id,value:value,isPct:isPct,pct:h.percent_of_account,
+        missing:isPct&&a.balance==null,acct:a.name||"(unknown)",
+        inst:(a.institutions&&a.institutions.name)||"",
+        color:(a.institutions&&a.institutions.color)||"#5A6B78",
+        locked:!!a.is_locked,bal:a.balance};
+    }).sort(function(x,y){ return y.value-x.value; });
+    var out={};
+    for(var k in e) out[k]=e[k];
+    out.total=total; out.liquid=liquid; out.locked=locked; out.hasPct=hasPct; out.places=places;
+    return out;
   });
 }
 
-/* ---------------- wire up ---------------- */
-$("signin").addEventListener("click", signIn);
-$("refresh").addEventListener("click", load);
-$("signout").addEventListener("click", signOut);
-["email","password"].forEach(id =>
-  $(id).addEventListener("keydown", e => { if(e.key==="Enter") signIn(); }));
+function envHtml(e){
+  var m=TYPE_META[e.type]||TYPE_META.flow;
+  var isOpen=!!openSet[e.id];
+  var pct=(e.type==="goal"&&e.target_amount)?Math.min(100,(e.total/Number(e.target_amount))*100):null;
+  var h='<div class="env"><button class="env-head" data-env="'+esc(e.id)+'">'+
+    '<span class="row wrapf" style="gap:7px;min-width:0">'+
+      '<span style="color:var(--ink-soft);font-size:11px">'+(isOpen?"\u25be":"\u25b8")+'</span>'+
+      '<span class="env-name">'+esc(e.name)+'</span>'+
+      '<span class="tag" style="color:'+m.c+';background:'+m.b+'">'+m.label+'</span>'+
+      (e.places.length>1?'<span class="muted">'+e.places.length+' places</span>':'')+
+      (e.hasPct?'<span class="tag" style="color:var(--gold);background:var(--gold-soft)">computed</span>':'')+
+    '</span><span class="env-total num">'+fmt(e.total)+'</span></button>';
+  if(pct!==null) h+='<div class="bar"><i style="width:'+pct.toFixed(0)+'%"></i></div>';
+  if(isOpen){
+    if(e.note) h+='<div style="padding:7px 16px 2px 32px;font-size:11.5px;color:var(--ink-soft);font-style:italic;line-height:1.5;background:var(--paper)">'+esc(e.note)+'</div>';
+    h+=e.places.map(function(p){
+      return '<div class="place">'+
+        '<span class="row" style="gap:7px;min-width:0">'+
+          '<span class="dot" style="background:'+esc(p.color)+'"></span>'+
+          '<span class="place-name">'+esc(p.inst)+' \u00b7 '+esc(p.acct)+'</span>'+
+          (p.locked?'<span class="tag" style="color:var(--slate);background:var(--slate-soft)">locked</span>':'')+
+          (p.isPct?'<span class="tag" style="color:var(--gold);background:var(--gold-soft)">'+esc(p.pct)+'%</span>':'')+
+        '</span>'+
+        '<span class="amt num" data-hid="'+esc(p.hid)+'" data-aid="'+esc(p.aid)+'" data-pct="'+(p.isPct?1:0)+
+          '" data-val="'+(p.isPct?(p.bal==null?"":p.bal):p.value)+'" style="color:'+(p.missing?"var(--rust)":"var(--ink)")+'">'+
+          (p.missing?"set balance":fmt(p.value))+'</span>'+
+      '</div>';
+    }).join("");
+  }
+  return h+'</div>';
+}
 
+function render(){
+  var rows=compute(raw);
+  var shown=view==="all"?rows:rows.filter(function(e){ return e.owner===view; });
+  var grand=0,gl=0,gk=0;
+  shown.forEach(function(r){ grand+=r.total; gl+=r.liquid; gk+=r.locked; });
+
+  $("grand").textContent=fmt(grand);
+  $("grandSub").innerHTML=
+    '<span style="font-size:12.5px;color:var(--green);font-weight:600">'+fmt(gl)+' liquid</span>'+
+    '<span style="font-size:12.5px;color:var(--slate);font-weight:600">'+fmt(gk)+' in CDs</span>'+
+    '<span style="font-size:12.5px;color:var(--ink-soft)">'+shown.length+' envelopes</span>';
+
+  var owners = view==="all" ? ["Jared","Kayla","Joint"] : [view];
+  $("board").innerHTML = owners.map(function(o){
+    var mine=rows.filter(function(e){ return e.owner===o; });
+    if(!mine.length) return "";
+    var sum=0; mine.forEach(function(r){ sum+=r.total; });
+    var cats={};
+    mine.forEach(function(e){ var c=e.category||"Other"; if(!cats[c]) cats[c]=[]; cats[c].push(e); });
+    var catNames=Object.keys(cats).sort(function(a,b){
+      var ia=CAT_ORDER.indexOf(a), ib=CAT_ORDER.indexOf(b);
+      return (ia<0?99:ia)-(ib<0?99:ib);
+    });
+    var body=catNames.map(function(c){
+      return '<div class="cat">'+esc(c)+'</div>'+
+        cats[c].sort(function(a,b){ return b.total-a.total; }).map(envHtml).join("");
+    }).join("");
+    var title = o==="Joint" ? "Shared" : o;
+    var cls = (view==="all" && o==="Joint") ? "panel span2" : "panel";
+    return '<section class="'+cls+'"><div class="panel-head">'+
+      '<span class="panel-title">'+esc(title)+'</span>'+
+      '<span class="panel-total num">'+fmt(sum)+'</span></div>'+body+'</section>';
+  }).join("");
+
+  wire();
+}
+
+function wire(){
+  var heads=document.querySelectorAll(".env-head");
+  for(var i=0;i<heads.length;i++){
+    heads[i].addEventListener("click",function(){
+      var id=this.getAttribute("data-env");
+      openSet[id]=!openSet[id];
+      render();
+    });
+  }
+  var amts=document.querySelectorAll(".amt");
+  for(var j=0;j<amts.length;j++){
+    amts[j].addEventListener("click",function(ev){
+      ev.stopPropagation();
+      if(editing) return;
+      editing=true;
+      var el=this;
+      var hid=el.getAttribute("data-hid"), aid=el.getAttribute("data-aid");
+      var isPct=el.getAttribute("data-pct")==="1";
+      var inp=document.createElement("input");
+      inp.type="number"; inp.step="0.01"; inp.className="amt-in";
+      inp.value=el.getAttribute("data-val");
+      inp.title=isPct?"Editing the account's full balance":"Editing this holding";
+      el.parentNode.replaceChild(inp,el);
+      inp.focus(); inp.select();
+      var done=function(commit){
+        if(!editing) return;
+        editing=false;
+        var v=parseFloat(inp.value);
+        if(commit && !isNaN(v)) saveAmount(hid,aid,isPct,v); else render();
+      };
+      inp.addEventListener("keydown",function(e){
+        if(e.key==="Enter") done(true);
+        if(e.key==="Escape") done(false);
+      });
+      inp.addEventListener("blur",function(){ done(true); });
+    });
+  }
+}
+
+$("signin").addEventListener("click",signIn);
+$("refresh").addEventListener("click",load);
+$("signout").addEventListener("click",signOut);
+["email","password"].forEach(function(id){
+  $(id).addEventListener("keydown",function(e){ if(e.key==="Enter") signIn(); });
+});
+var chips=document.querySelectorAll(".chip");
+for(var c=0;c<chips.length;c++){
+  chips[c].addEventListener("click",function(){
+    for(var k=0;k<chips.length;k++) chips[k].classList.remove("on");
+    this.classList.add("on");
+    view=this.getAttribute("data-view");
+    render();
+  });
+}
 (function init(){
-  const t = loadToken();
-  if(t){ token = t; showApp(); load(); }
+  var t=null; try{ t=localStorage.getItem("ledger_token"); }catch(e){}
+  if(t){ token=t; $("login").classList.add("hidden"); $("app").classList.remove("hidden"); load(); }
 })();
 </script>
 </body>
