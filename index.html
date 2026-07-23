@@ -32,6 +32,9 @@
   .chip{padding:6px 14px;font-size:12.5px;font-weight:700;border:1px solid var(--line);
     border-radius:20px;background:var(--card);color:var(--ink-soft);cursor:pointer}
   .chip.on{background:var(--teal);border-color:var(--teal);color:#fff}
+  .tab{padding:8px 16px;font-size:13.5px;font-weight:700;border:1px solid var(--line);
+    border-radius:9px;background:var(--card);color:var(--ink-soft);cursor:pointer}
+  .tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
   .tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;white-space:nowrap}
 
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
@@ -76,8 +79,25 @@
   .hidden{display:none}
   #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);
     color:#fff;padding:9px 18px;border-radius:10px;font-size:13.5px;font-weight:600;
-    box-shadow:0 6px 24px rgba(0,0,0,.18);opacity:0;transition:opacity .2s;pointer-events:none}
+    box-shadow:0 6px 24px rgba(0,0,0,.18);opacity:0;transition:opacity .2s;pointer-events:none;z-index:99}
   #toast.show{opacity:1}
+
+  /* manage screen */
+  .mrow{display:grid;grid-template-columns:2fr 78px 96px 118px 62px;gap:8px;align-items:center;
+    padding:7px 14px;border-top:1px solid var(--paper)}
+  .mrow.env-cols{grid-template-columns:2fr 96px 110px 1fr}
+  .mhead{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-soft);
+    font-weight:700;background:var(--paper)}
+  .mi{width:100%;font-size:12.5px;padding:5px 7px;border:1px solid transparent;border-radius:6px;
+    font-family:inherit;background:transparent;color:var(--ink)}
+  .mi:hover{border-color:var(--line);background:var(--paper)}
+  .mi:focus{border-color:var(--teal);background:var(--card);outline:none}
+  select.mi{cursor:pointer}
+  @media (max-width:760px){
+    .mrow, .mrow.env-cols{grid-template-columns:1fr 1fr;gap:6px}
+    .mhead{display:none}
+    .mrow{padding:10px 14px}
+  }
 </style>
 </head>
 <body>
@@ -89,7 +109,7 @@
     <div class="label">Email</div>
     <input id="email" class="field" type="email" autocomplete="username" placeholder="you@example.com" />
     <div class="label">Password</div>
-    <input id="password" class="field" type="password" autocomplete="current-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" />
+    <input id="password" class="field" type="password" autocomplete="current-password" />
     <div id="authErr" class="alert hidden"></div>
     <button id="signin" class="primary">Sign in</button>
   </div>
@@ -99,80 +119,101 @@
   <div class="row between wrapf" style="gap:12px;margin-bottom:14px">
     <div>
       <div class="eyebrow">Nielsen Household</div>
-      <h1>Envelopes</h1>
+      <h1>The Ledger</h1>
     </div>
-    <div class="row" style="gap:8px">
+    <div class="row wrapf" style="gap:8px">
+      <button class="tab on" data-tab="envelopes">Envelopes</button>
+      <button class="tab" data-tab="manage">Manage</button>
       <button id="refresh" class="btn">Refresh</button>
       <button id="signout" class="btn" style="color:var(--ink-soft)">Sign out</button>
     </div>
   </div>
 
-  <div class="card" style="padding:16px 20px;margin-bottom:14px">
-    <div class="row between wrapf" style="gap:14px">
-      <div>
-        <div class="eyebrow" style="letter-spacing:1.4px">Showing</div>
-        <div id="grand" class="num" style="font-size:31px;font-weight:800;letter-spacing:-.8px;line-height:1.2">&mdash;</div>
-        <div id="grandSub" class="row wrapf" style="gap:14px;margin-top:3px"></div>
-      </div>
-      <div class="row wrapf" style="gap:6px">
-        <button class="chip on" data-view="all">Everything</button>
-        <button class="chip" data-view="Jared">Jared</button>
-        <button class="chip" data-view="Kayla">Kayla</button>
-        <button class="chip" data-view="Joint">Shared</button>
+  <div id="loadErr" class="alert hidden"></div>
+
+  <!-- ENVELOPES VIEW -->
+  <div id="viewEnvelopes">
+    <div class="card" style="padding:16px 20px;margin-bottom:14px">
+      <div class="row between wrapf" style="gap:14px">
+        <div>
+          <div class="eyebrow" style="letter-spacing:1.4px">Showing</div>
+          <div id="grand" class="num" style="font-size:31px;font-weight:800;letter-spacing:-.8px;line-height:1.2">&mdash;</div>
+          <div id="grandSub" class="row wrapf" style="gap:14px;margin-top:3px"></div>
+        </div>
+        <div class="row wrapf" style="gap:6px">
+          <button class="chip on" data-view="all">Everything</button>
+          <button class="chip" data-view="Jared">Jared</button>
+          <button class="chip" data-view="Kayla">Kayla</button>
+          <button class="chip" data-view="Joint">Shared</button>
+        </div>
       </div>
     </div>
+    <div id="board" class="grid"></div>
+    <p class="muted" style="margin-top:22px;line-height:1.6">
+      Click any amount to edit it &mdash; saving also records a dated snapshot, so history is never
+      overwritten. Percentage-based holdings edit the account balance instead.
+    </p>
   </div>
 
-  <div id="loadErr" class="alert hidden"></div>
-  <div id="board" class="grid"></div>
-
-  <p class="muted" style="margin-top:22px;line-height:1.6">
-    Click any amount to edit it &mdash; saving also records a dated snapshot, so history is never
-    overwritten. Percentage-based holdings edit the account balance instead, and their share
-    recomputes automatically.
-  </p>
+  <!-- MANAGE VIEW -->
+  <div id="viewManage" class="hidden">
+    <div class="row wrapf" style="gap:6px;margin-bottom:14px">
+      <button class="chip on" data-mtab="accounts">Accounts</button>
+      <button class="chip" data-mtab="envelopes">Envelopes</button>
+    </div>
+    <div id="manageBody"></div>
+    <p class="muted" style="margin-top:22px;line-height:1.6">
+      Edits save when you leave a field. Changing an envelope&rsquo;s owner or category only changes
+      how it&rsquo;s grouped &mdash; no money moves.
+    </p>
+  </div>
 </div>
 
 <div id="toast"></div>
+<datalist id="catlist">
+  <option value="Daily"></option><option value="Reserves"></option><option value="Goals"></option>
+  <option value="Giving"></option><option value="Retirement"></option><option value="Long Term"></option>
+</datalist>
 
 <script>
-const SUPABASE_URL = "https://bhifplcdxuunclzrfnoi.supabase.co";
-const SUPABASE_KEY = "sb_publishable_fVibzJZbwNWX-14EgTRIUw_xVArtTb7";
+var SUPABASE_URL = "https://bhifplcdxuunclzrfnoi.supabase.co";
+var SUPABASE_KEY = "sb_publishable_fVibzJZbwNWX-14EgTRIUw_xVArtTb7";
 
-const SELECT =
+var SELECT =
   "id,name,type,owner,category,target_amount,target_date,note,status," +
   "holdings(id,amount,percent_of_account," +
   "accounts(id,name,balance,is_locked,locked_until,institutions(name,color)))";
+var ACCT_SELECT =
+  "id,name,last_four,owner,kind,is_locked,locked_until,balance,active,institutions(name,color)";
 
-const TYPE_META = {
+var TYPE_META = {
   flow:{label:"Flow",c:"var(--teal)",b:"var(--teal-soft)"},
   sinking:{label:"Reserve",c:"var(--slate)",b:"var(--slate-soft)"},
   goal:{label:"Goal",c:"var(--gold)",b:"var(--gold-soft)"},
   floor:{label:"Floor",c:"var(--green)",b:"var(--green-soft)"},
   project:{label:"Project",c:"var(--rust)",b:"var(--rust-soft)"}
 };
-const CAT_ORDER = ["Daily","Reserves","Goals","Giving","Retirement","Long Term"];
+var CAT_ORDER = ["Daily","Reserves","Goals","Giving","Retirement","Long Term"];
+var OWNERS = ["Jared","Kayla","Joint"];
+var KINDS = ["savings","checking","credit_card","investment"];
+var TYPES = ["flow","sinking","goal","floor","project"];
 
-const $ = function(id){ return document.getElementById(id); };
-const fmt  = function(n){ return (n||0).toLocaleString("en-US",{style:"currency",currency:"USD"}); };
-const esc  = function(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(m){
-  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]; }); };
+function $(id){ return document.getElementById(id); }
+function fmt(n){ return (n||0).toLocaleString("en-US",{style:"currency",currency:"USD"}); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(m){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]; }); }
 
-var token=null, raw=[], openSet={}, view="all", editing=false;
+var token=null, raw=[], accts=[], openSet={}, view="all", tab="envelopes", mtab="accounts", editing=false;
 
 function saveToken(t){ token=t; try{ localStorage.setItem("ledger_token",t); }catch(e){} }
 function clearToken(){ token=null; try{ localStorage.removeItem("ledger_token"); }catch(e){} }
-
 function headers(extra){
   var h={apikey:SUPABASE_KEY,Authorization:"Bearer "+token,"Content-Type":"application/json"};
   if(extra) for(var k in extra) h[k]=extra[k];
   return h;
 }
-
-function toast(msg){
-  var t=$("toast"); t.textContent=msg; t.classList.add("show");
-  setTimeout(function(){ t.classList.remove("show"); },2200);
-}
+function toast(m){ var t=$("toast"); t.textContent=m; t.classList.add("show");
+  setTimeout(function(){ t.classList.remove("show"); },2200); }
 
 async function signIn(){
   var email=$("email").value.trim(), password=$("password").value;
@@ -193,20 +234,20 @@ async function signIn(){
     el.classList.remove("hidden");
   }finally{ b.disabled=false; b.textContent="Sign in"; }
 }
-
-function signOut(){
-  clearToken(); $("app").classList.add("hidden"); $("login").classList.remove("hidden"); $("board").innerHTML="";
-}
+function signOut(){ clearToken(); $("app").classList.add("hidden"); $("login").classList.remove("hidden"); $("board").innerHTML=""; }
 
 async function load(){
   var b=$("refresh"); b.disabled=true; b.textContent="Loading\u2026"; $("loadErr").classList.add("hidden");
   try{
-    var r=await fetch(SUPABASE_URL+"/rest/v1/envelopes?select="+encodeURIComponent(SELECT)+"&order=name.asc",
-      {headers:headers()});
+    var r=await fetch(SUPABASE_URL+"/rest/v1/envelopes?select="+encodeURIComponent(SELECT)+"&order=name.asc",{headers:headers()});
     if(r.status===401){ signOut(); return; }
     var d=await r.json();
-    if(!r.ok) throw new Error(d.message||d.hint||"Could not load");
-    raw=d; render();
+    if(!r.ok) throw new Error(d.message||d.hint||"Could not load envelopes");
+    raw=d;
+    var r2=await fetch(SUPABASE_URL+"/rest/v1/accounts?select="+encodeURIComponent(ACCT_SELECT)+"&order=name.asc",{headers:headers()});
+    var d2=await r2.json();
+    if(r2.ok) accts=d2;
+    draw();
   }catch(e){
     var el=$("loadErr");
     el.innerHTML='<div style="font-weight:700;color:var(--rust);margin-bottom:6px">Couldn\'t load</div><div>'+esc(e.message)+'</div>';
@@ -214,26 +255,27 @@ async function load(){
   }finally{ b.disabled=false; b.textContent="Refresh"; }
 }
 
-async function saveAmount(holdingId, accountId, isPct, value){
+async function patch(table, id, body, quiet){
   try{
-    var today=new Date().toISOString().slice(0,10);
-    if(isPct){
-      var r=await fetch(SUPABASE_URL+"/rest/v1/accounts?id=eq."+accountId,{
-        method:"PATCH",headers:headers({Prefer:"return=minimal"}),
-        body:JSON.stringify({balance:value,balance_as_of:today})});
-      if(!r.ok) throw new Error("Save failed ("+r.status+")");
-    }else{
-      var r2=await fetch(SUPABASE_URL+"/rest/v1/holdings?id=eq."+holdingId,{
-        method:"PATCH",headers:headers({Prefer:"return=minimal"}),
-        body:JSON.stringify({amount:value})});
-      if(!r2.ok) throw new Error("Save failed ("+r2.status+")");
-      await fetch(SUPABASE_URL+"/rest/v1/snapshots",{
-        method:"POST",headers:headers({Prefer:"return=minimal"}),
-        body:JSON.stringify({holding_id:holdingId,amount:value,as_of:today})});
-    }
-    toast("Saved");
-    await load();
-  }catch(e){ toast(e.message); render(); }
+    var r=await fetch(SUPABASE_URL+"/rest/v1/"+table+"?id=eq."+id,{
+      method:"PATCH",headers:headers({Prefer:"return=minimal"}),body:JSON.stringify(body)});
+    if(!r.ok) throw new Error("Save failed ("+r.status+")");
+    if(!quiet) toast("Saved");
+    return true;
+  }catch(e){ toast(e.message); return false; }
+}
+
+async function saveAmount(hid, aid, isPct, value){
+  var today=new Date().toISOString().slice(0,10);
+  if(isPct){
+    await patch("accounts", aid, {balance:value, balance_as_of:today});
+  }else{
+    var ok=await patch("holdings", hid, {amount:value});
+    if(ok) await fetch(SUPABASE_URL+"/rest/v1/snapshots",{
+      method:"POST",headers:headers({Prefer:"return=minimal"}),
+      body:JSON.stringify({holding_id:hid,amount:value,as_of:today})});
+  }
+  await load();
 }
 
 function compute(list){
@@ -251,10 +293,9 @@ function compute(list){
         color:(a.institutions&&a.institutions.color)||"#5A6B78",
         locked:!!a.is_locked,bal:a.balance};
     }).sort(function(x,y){ return y.value-x.value; });
-    var out={};
-    for(var k in e) out[k]=e[k];
-    out.total=total; out.liquid=liquid; out.locked=locked; out.hasPct=hasPct; out.places=places;
-    return out;
+    var o={}; for(var k in e) o[k]=e[k];
+    o.total=total;o.liquid=liquid;o.locked=locked;o.hasPct=hasPct;o.places=places;
+    return o;
   });
 }
 
@@ -274,94 +315,150 @@ function envHtml(e){
   if(isOpen){
     if(e.note) h+='<div style="padding:7px 16px 2px 32px;font-size:11.5px;color:var(--ink-soft);font-style:italic;line-height:1.5;background:var(--paper)">'+esc(e.note)+'</div>';
     h+=e.places.map(function(p){
-      return '<div class="place">'+
-        '<span class="row" style="gap:7px;min-width:0">'+
-          '<span class="dot" style="background:'+esc(p.color)+'"></span>'+
-          '<span class="place-name">'+esc(p.inst)+' \u00b7 '+esc(p.acct)+'</span>'+
-          (p.locked?'<span class="tag" style="color:var(--slate);background:var(--slate-soft)">locked</span>':'')+
-          (p.isPct?'<span class="tag" style="color:var(--gold);background:var(--gold-soft)">'+esc(p.pct)+'%</span>':'')+
-        '</span>'+
-        '<span class="amt num" data-hid="'+esc(p.hid)+'" data-aid="'+esc(p.aid)+'" data-pct="'+(p.isPct?1:0)+
-          '" data-val="'+(p.isPct?(p.bal==null?"":p.bal):p.value)+'" style="color:'+(p.missing?"var(--rust)":"var(--ink)")+'">'+
-          (p.missing?"set balance":fmt(p.value))+'</span>'+
-      '</div>';
+      return '<div class="place"><span class="row" style="gap:7px;min-width:0">'+
+        '<span class="dot" style="background:'+esc(p.color)+'"></span>'+
+        '<span class="place-name">'+esc(p.inst)+' \u00b7 '+esc(p.acct)+'</span>'+
+        (p.locked?'<span class="tag" style="color:var(--slate);background:var(--slate-soft)">locked</span>':'')+
+        (p.isPct?'<span class="tag" style="color:var(--gold);background:var(--gold-soft)">'+esc(p.pct)+'%</span>':'')+
+        '</span><span class="amt num" data-hid="'+esc(p.hid)+'" data-aid="'+esc(p.aid)+'" data-pct="'+(p.isPct?1:0)+
+        '" data-val="'+(p.isPct?(p.bal==null?"":p.bal):p.value)+'" style="color:'+(p.missing?"var(--rust)":"var(--ink)")+'">'+
+        (p.missing?"set balance":fmt(p.value))+'</span></div>';
     }).join("");
   }
   return h+'</div>';
 }
 
-function render(){
+function renderEnvelopes(){
   var rows=compute(raw);
   var shown=view==="all"?rows:rows.filter(function(e){ return e.owner===view; });
   var grand=0,gl=0,gk=0;
   shown.forEach(function(r){ grand+=r.total; gl+=r.liquid; gk+=r.locked; });
-
   $("grand").textContent=fmt(grand);
   $("grandSub").innerHTML=
     '<span style="font-size:12.5px;color:var(--green);font-weight:600">'+fmt(gl)+' liquid</span>'+
     '<span style="font-size:12.5px;color:var(--slate);font-weight:600">'+fmt(gk)+' in CDs</span>'+
     '<span style="font-size:12.5px;color:var(--ink-soft)">'+shown.length+' envelopes</span>';
 
-  var owners = view==="all" ? ["Jared","Kayla","Joint"] : [view];
+  var owners = view==="all" ? OWNERS : [view];
   $("board").innerHTML = owners.map(function(o){
     var mine=rows.filter(function(e){ return e.owner===o; });
     if(!mine.length) return "";
     var sum=0; mine.forEach(function(r){ sum+=r.total; });
     var cats={};
     mine.forEach(function(e){ var c=e.category||"Other"; if(!cats[c]) cats[c]=[]; cats[c].push(e); });
-    var catNames=Object.keys(cats).sort(function(a,b){
+    var names=Object.keys(cats).sort(function(a,b){
       var ia=CAT_ORDER.indexOf(a), ib=CAT_ORDER.indexOf(b);
-      return (ia<0?99:ia)-(ib<0?99:ib);
-    });
-    var body=catNames.map(function(c){
+      return (ia<0?99:ia)-(ib<0?99:ib); });
+    var body=names.map(function(c){
       return '<div class="cat">'+esc(c)+'</div>'+
-        cats[c].sort(function(a,b){ return b.total-a.total; }).map(envHtml).join("");
-    }).join("");
-    var title = o==="Joint" ? "Shared" : o;
-    var cls = (view==="all" && o==="Joint") ? "panel span2" : "panel";
-    return '<section class="'+cls+'"><div class="panel-head">'+
-      '<span class="panel-title">'+esc(title)+'</span>'+
-      '<span class="panel-total num">'+fmt(sum)+'</span></div>'+body+'</section>';
+        cats[c].sort(function(a,b){ return b.total-a.total; }).map(envHtml).join(""); }).join("");
+    var title=o==="Joint"?"Shared":o;
+    var cls=(view==="all"&&o==="Joint")?"panel span2":"panel";
+    return '<section class="'+cls+'"><div class="panel-head"><span class="panel-title">'+esc(title)+
+      '</span><span class="panel-total num">'+fmt(sum)+'</span></div>'+body+'</section>';
   }).join("");
-
-  wire();
 }
 
-function wire(){
-  var heads=document.querySelectorAll(".env-head");
-  for(var i=0;i<heads.length;i++){
-    heads[i].addEventListener("click",function(){
-      var id=this.getAttribute("data-env");
-      openSet[id]=!openSet[id];
-      render();
+function sel(val, opts, cls, attrs){
+  return '<select class="'+cls+'" '+attrs+'>'+opts.map(function(o){
+    var lbl=o.replace("_"," ");
+    return '<option value="'+esc(o)+'"'+(o===val?" selected":"")+'>'+esc(lbl)+'</option>';
+  }).join("")+'</select>';
+}
+
+function renderManage(){
+  var body=$("manageBody");
+  if(mtab==="accounts"){
+    var byInst={};
+    accts.forEach(function(a){
+      var n=(a.institutions&&a.institutions.name)||"Other";
+      if(!byInst[n]) byInst[n]=[]; byInst[n].push(a);
     });
+    body.innerHTML=Object.keys(byInst).sort().map(function(inst){
+      var color=(byInst[inst][0].institutions&&byInst[inst][0].institutions.color)||"#5A6B78";
+      return '<section class="panel" style="margin-bottom:12px">'+
+        '<div class="panel-head"><span class="row" style="gap:8px">'+
+        '<span class="dot" style="background:'+esc(color)+'"></span>'+
+        '<span class="panel-title">'+esc(inst)+'</span></span>'+
+        '<span class="muted">'+byInst[inst].length+' accounts</span></div>'+
+        '<div class="mrow mhead"><span>Name</span><span>Last 4</span><span>Owner</span><span>Kind</span><span>Locked</span></div>'+
+        byInst[inst].map(function(a){
+          return '<div class="mrow">'+
+            '<input class="mi" value="'+esc(a.name)+'" data-t="accounts" data-id="'+esc(a.id)+'" data-f="name">'+
+            '<input class="mi" value="'+esc(a.last_four||"")+'" placeholder="&mdash;" data-t="accounts" data-id="'+esc(a.id)+'" data-f="last_four">'+
+            sel(a.owner||"Joint",OWNERS,"mi",'data-t="accounts" data-id="'+esc(a.id)+'" data-f="owner"')+
+            sel(a.kind||"savings",KINDS,"mi",'data-t="accounts" data-id="'+esc(a.id)+'" data-f="kind"')+
+            '<input type="checkbox" '+(a.is_locked?"checked":"")+' data-t="accounts" data-id="'+esc(a.id)+'" data-f="is_locked" style="justify-self:center">'+
+          '</div>';
+        }).join("")+'</section>';
+    }).join("");
+  }else{
+    var sorted=raw.slice().sort(function(a,b){
+      if((a.owner||"")!==(b.owner||"")) return (a.owner||"").localeCompare(b.owner||"");
+      return (a.name||"").localeCompare(b.name||"");
+    });
+    body.innerHTML='<section class="panel">'+
+      '<div class="panel-head"><span class="panel-title">Envelopes</span>'+
+      '<span class="muted">'+sorted.length+' total</span></div>'+
+      '<div class="mrow env-cols mhead"><span>Name</span><span>Owner</span><span>Type</span><span>Category</span></div>'+
+      sorted.map(function(e){
+        return '<div class="mrow env-cols">'+
+          '<input class="mi" value="'+esc(e.name)+'" data-t="envelopes" data-id="'+esc(e.id)+'" data-f="name">'+
+          sel(e.owner||"Joint",OWNERS,"mi",'data-t="envelopes" data-id="'+esc(e.id)+'" data-f="owner"')+
+          sel(e.type||"flow",TYPES,"mi",'data-t="envelopes" data-id="'+esc(e.id)+'" data-f="type"')+
+          '<input class="mi" list="catlist" value="'+esc(e.category||"")+'" placeholder="uncategorized" data-t="envelopes" data-id="'+esc(e.id)+'" data-f="category">'+
+        '</div>';
+      }).join("")+'</section>';
   }
+  wireManage();
+}
+
+function draw(){
+  if(tab==="envelopes"){ $("viewEnvelopes").classList.remove("hidden"); $("viewManage").classList.add("hidden"); renderEnvelopes(); wireEnv(); }
+  else { $("viewEnvelopes").classList.add("hidden"); $("viewManage").classList.remove("hidden"); renderManage(); }
+}
+
+function wireEnv(){
+  var heads=document.querySelectorAll(".env-head");
+  for(var i=0;i<heads.length;i++) heads[i].addEventListener("click",function(){
+    var id=this.getAttribute("data-env"); openSet[id]=!openSet[id]; draw();
+  });
   var amts=document.querySelectorAll(".amt");
-  for(var j=0;j<amts.length;j++){
-    amts[j].addEventListener("click",function(ev){
-      ev.stopPropagation();
-      if(editing) return;
-      editing=true;
-      var el=this;
-      var hid=el.getAttribute("data-hid"), aid=el.getAttribute("data-aid");
-      var isPct=el.getAttribute("data-pct")==="1";
-      var inp=document.createElement("input");
-      inp.type="number"; inp.step="0.01"; inp.className="amt-in";
-      inp.value=el.getAttribute("data-val");
-      inp.title=isPct?"Editing the account's full balance":"Editing this holding";
-      el.parentNode.replaceChild(inp,el);
-      inp.focus(); inp.select();
-      var done=function(commit){
-        if(!editing) return;
-        editing=false;
-        var v=parseFloat(inp.value);
-        if(commit && !isNaN(v)) saveAmount(hid,aid,isPct,v); else render();
-      };
-      inp.addEventListener("keydown",function(e){
-        if(e.key==="Enter") done(true);
-        if(e.key==="Escape") done(false);
+  for(var j=0;j<amts.length;j++) amts[j].addEventListener("click",function(ev){
+    ev.stopPropagation();
+    if(editing) return;
+    editing=true;
+    var el=this, hid=el.getAttribute("data-hid"), aid=el.getAttribute("data-aid");
+    var isPct=el.getAttribute("data-pct")==="1";
+    var inp=document.createElement("input");
+    inp.type="number"; inp.step="0.01"; inp.className="amt-in"; inp.value=el.getAttribute("data-val");
+    inp.title=isPct?"Editing the account's full balance":"Editing this holding";
+    el.parentNode.replaceChild(inp,el); inp.focus(); inp.select();
+    var done=function(commit){
+      if(!editing) return; editing=false;
+      var v=parseFloat(inp.value);
+      if(commit && !isNaN(v)) saveAmount(hid,aid,isPct,v); else draw();
+    };
+    inp.addEventListener("keydown",function(e){ if(e.key==="Enter") done(true); if(e.key==="Escape") done(false); });
+    inp.addEventListener("blur",function(){ done(true); });
+  });
+}
+
+function wireManage(){
+  var els=document.querySelectorAll("[data-f]");
+  for(var i=0;i<els.length;i++){
+    var el=els[i];
+    var evt=(el.tagName==="SELECT"||el.type==="checkbox")?"change":"blur";
+    el.addEventListener(evt,function(){
+      var t=this.getAttribute("data-t"), id=this.getAttribute("data-id"), f=this.getAttribute("data-f");
+      var val = this.type==="checkbox" ? this.checked : this.value;
+      if(typeof val==="string"){ val=val.trim(); if(val==="") val=null; }
+      var body={}; body[f]=val;
+      patch(t,id,body).then(function(ok){
+        if(!ok) return;
+        var list = t==="accounts" ? accts : raw;
+        for(var k=0;k<list.length;k++) if(list[k].id===id) list[k][f]=val;
       });
-      inp.addEventListener("blur",function(){ done(true); });
     });
   }
 }
@@ -370,17 +467,23 @@ $("signin").addEventListener("click",signIn);
 $("refresh").addEventListener("click",load);
 $("signout").addEventListener("click",signOut);
 ["email","password"].forEach(function(id){
-  $(id).addEventListener("keydown",function(e){ if(e.key==="Enter") signIn(); });
-});
-var chips=document.querySelectorAll(".chip");
-for(var c=0;c<chips.length;c++){
-  chips[c].addEventListener("click",function(){
-    for(var k=0;k<chips.length;k++) chips[k].classList.remove("on");
-    this.classList.add("on");
-    view=this.getAttribute("data-view");
-    render();
-  });
-}
+  $(id).addEventListener("keydown",function(e){ if(e.key==="Enter") signIn(); }); });
+
+var chips=document.querySelectorAll("[data-view]");
+for(var c=0;c<chips.length;c++) chips[c].addEventListener("click",function(){
+  for(var k=0;k<chips.length;k++) chips[k].classList.remove("on");
+  this.classList.add("on"); view=this.getAttribute("data-view"); draw(); });
+
+var mchips=document.querySelectorAll("[data-mtab]");
+for(var mc=0;mc<mchips.length;mc++) mchips[mc].addEventListener("click",function(){
+  for(var k=0;k<mchips.length;k++) mchips[k].classList.remove("on");
+  this.classList.add("on"); mtab=this.getAttribute("data-mtab"); draw(); });
+
+var tabs=document.querySelectorAll("[data-tab]");
+for(var t=0;t<tabs.length;t++) tabs[t].addEventListener("click",function(){
+  for(var k=0;k<tabs.length;k++) tabs[k].classList.remove("on");
+  this.classList.add("on"); tab=this.getAttribute("data-tab"); draw(); });
+
 (function init(){
   var t=null; try{ t=localStorage.getItem("ledger_token"); }catch(e){}
   if(t){ token=t; $("login").classList.add("hidden"); $("app").classList.remove("hidden"); load(); }
