@@ -136,30 +136,39 @@
 
   <!-- ENVELOPES VIEW -->
   <div id="viewEnvelopes">
-    <div class="card" style="padding:16px 20px;margin-bottom:14px">
-      <div class="row between wrapf" style="gap:14px">
-        <div>
-          <div class="eyebrow" style="letter-spacing:1.4px">Showing</div>
-          <div id="grand" class="num" style="font-size:31px;font-weight:800;letter-spacing:-.8px;line-height:1.2">&mdash;</div>
-          <div id="grandSub" class="row wrapf" style="gap:14px;margin-top:3px"></div>
-        </div>
-        <div class="row wrapf" style="gap:6px;align-items:center">
-          <span class="row wrapf" style="gap:6px;margin-right:10px">
-            <button class="chip on" data-bal="available">Available</button>
-            <button class="chip" data-bal="cash">Cash</button>
-          </span>
-          <button class="chip on" data-view="all">Everything</button>
-          <button class="chip" data-view="Jared">Jared</button>
-          <button class="chip" data-view="Kayla">Kayla</button>
-          <button class="chip" data-view="Joint">Shared</button>
-        </div>
+    <div class="row between wrapf" style="gap:12px;margin-bottom:14px">
+      <div class="row wrapf" style="gap:6px">
+        <button class="chip on" data-bal="available">Available</button>
+        <button class="chip" data-bal="cash">Cash</button>
+      </div>
+      <div class="row wrapf" style="gap:6px">
+        <button class="chip on" data-view="all">Everything</button>
+        <button class="chip" data-view="Jared">Jared</button>
+        <button class="chip" data-view="Kayla">Kayla</button>
+        <button class="chip" data-view="Joint">Shared</button>
       </div>
     </div>
     <div id="board" class="grid"></div>
-    <p class="muted" style="margin-top:22px;line-height:1.6">
-      Click any amount to edit it &mdash; saving also records a dated snapshot, so history is never
-      overwritten. Percentage-based holdings edit the account balance instead.
-    </p>
+    <div style="margin-top:26px;padding-top:16px;border-top:1px solid var(--line)">
+      <div class="row wrapf" style="gap:26px">
+        <div>
+          <div class="eyebrow" style="letter-spacing:1.2px;font-size:10px">Retirement</div>
+          <div id="sumRet" class="num" style="font-size:16px;font-weight:700;color:var(--ink-soft)">&mdash;</div>
+        </div>
+        <div>
+          <div class="eyebrow" style="letter-spacing:1.2px;font-size:10px">Everything else</div>
+          <div id="sumOther" class="num" style="font-size:16px;font-weight:700;color:var(--ink-soft)">&mdash;</div>
+        </div>
+        <div id="sumPendWrap" class="hidden">
+          <div class="eyebrow" style="letter-spacing:1.2px;font-size:10px">Unsettled</div>
+          <div id="sumPend" class="num" style="font-size:16px;font-weight:700;color:var(--gold)">&mdash;</div>
+        </div>
+      </div>
+      <p class="muted" style="margin-top:14px;line-height:1.6">
+        Click any amount to edit it &mdash; saving also records a dated snapshot, so history is never
+        overwritten. Percentage-based holdings edit the account balance instead.
+      </p>
+    </div>
   </div>
 
 
@@ -655,13 +664,16 @@ function renderEnvelopes(){
   var rows=withRollup(compute(raw));
   var tops=rows.filter(function(e){ return !e.parent_id || !rows.some(function(p){ return p.id===e.parent_id; }); });
   var shown=view==="all"?tops:tops.filter(function(e){ return e.owner===view; });
-  var grand=0,gp=0;
-  shown.forEach(function(r){ grand+=r.total; gp+=r.pend; });
-  $("grand").textContent=fmt(balMode==="cash"?grand:(grand-gp));
-  $("grandSub").innerHTML=
-    (gp>0?'<span style="font-size:12.5px;color:var(--gold);font-weight:600">'+fmt(gp)+' unsettled</span>':'')+
-    '<span style="font-size:12.5px;color:var(--ink-soft)">cash '+fmt(grand)+'</span>'+
-    '<span style="font-size:12.5px;color:var(--ink-soft)">'+shown.length+' envelopes</span>';
+  var ret=0, other=0, gp=0;
+  shown.forEach(function(r){
+    var v=shownVal(r);
+    if((r.category||"")==="Retirement") ret+=v; else other+=v;
+    gp+=r.pend;
+  });
+  $("sumRet").textContent=fmt(ret);
+  $("sumOther").textContent=fmt(other);
+  if(gp>0){ $("sumPend").textContent=fmt(gp); $("sumPendWrap").classList.remove("hidden"); }
+  else $("sumPendWrap").classList.add("hidden");
 
   var owners = view==="all" ? OWNERS : [view];
   $("board").innerHTML = owners.map(function(o){
