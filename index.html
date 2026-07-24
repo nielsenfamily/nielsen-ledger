@@ -1938,6 +1938,7 @@ function renderInsurance(){
     var ra = ia>=0 ? ia : (a==="Other" ? 99 : (kidNames[a] ? 10 : 50));
     var rb = ib>=0 ? ib : (b==="Other" ? 99 : (kidNames[b] ? 10 : 50));
     if(ra!==rb) return ra-rb;
+    if(kidNames[a] && kidNames[b]) return byKidOrder(a,b);
     return a.localeCompare(b);
   });
   $("insBody").innerHTML = keys.length ? keys.map(function(k){
@@ -2004,6 +2005,7 @@ function openPolicy(id){
     var ra=ia>=0?ia:(a==="Other"?99:(kidN[a]?10:50));
     var rb=ib>=0?ib:(b==="Other"?99:(kidN[b]?10:50));
     if(ra!==rb) return ra-rb;
+    if(kidN[a] && kidN[b]) return byKidOrder(a,b);
     return a.localeCompare(b);
   });
   $("pInsured").innerHTML=whoList.map(function(o){
@@ -2088,6 +2090,13 @@ async function loadPolicies(){
 
 /* ================= KIDS ACCOUNTS ================= */
 var KID_TYPES=["Kids Savings","Trump Account","529 Plan","Custodial Brokerage","Other"];
+/* birth order — edit this list if another child is added */
+var KID_ORDER=["Andrew","Josiah","Aravis"];
+function kidRank(n){ var i=KID_ORDER.indexOf(n); return i<0?99:i; }
+function byKidOrder(a,b){
+  var r=kidRank(a)-kidRank(b);
+  return r!==0 ? r : a.localeCompare(b);
+}
 var editingKid=null;
 
 function renderKids(){
@@ -2096,7 +2105,7 @@ function renderKids(){
     if(!groups[k.child]) groups[k.child]=[];
     groups[k.child].push(k);
   });
-  var names=Object.keys(groups).sort();
+  var names=Object.keys(groups).sort(byKidOrder);
   $("kidsBody").innerHTML = names.length ? names.map(function(n){
     var rows=groups[n].sort(function(a,b){ return (a.sort_order||99)-(b.sort_order||99); });
     var known=0, anyKnown=false;
