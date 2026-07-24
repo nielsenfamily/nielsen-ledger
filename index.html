@@ -85,7 +85,7 @@
   /* manage screen */
   .mrow{display:grid;grid-template-columns:2fr 78px 96px 118px 62px;gap:8px;align-items:center;
     padding:7px 14px;border-top:1px solid var(--paper)}
-  .mrow.env-cols{grid-template-columns:2fr 96px 110px 1fr}
+  .mrow.env-cols{grid-template-columns:1.6fr 92px 100px 1fr 1.3fr}
   .mhead{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-soft);
     font-weight:700;background:var(--paper)}
   .mi{width:100%;font-size:12.5px;padding:5px 7px;border:1px solid transparent;border-radius:6px;
@@ -142,7 +142,11 @@
           <div id="grand" class="num" style="font-size:31px;font-weight:800;letter-spacing:-.8px;line-height:1.2">&mdash;</div>
           <div id="grandSub" class="row wrapf" style="gap:14px;margin-top:3px"></div>
         </div>
-        <div class="row wrapf" style="gap:6px">
+        <div class="row wrapf" style="gap:6px;align-items:center">
+          <span class="row wrapf" style="gap:6px;margin-right:10px">
+            <button class="chip on" data-bal="available">Available</button>
+            <button class="chip" data-bal="cash">Cash</button>
+          </span>
           <button class="chip on" data-view="all">Everything</button>
           <button class="chip" data-view="Jared">Jared</button>
           <button class="chip" data-view="Kayla">Kayla</button>
@@ -298,11 +302,68 @@
     </p>
   </div>
 
+
+  <!-- ADD ACCOUNT / ENVELOPE MODAL -->
+  <div id="addModal" class="hidden" style="position:fixed;inset:0;background:rgba(18,35,46,.45);display:flex;align-items:flex-start;justify-content:center;padding:18px;overflow-y:auto;z-index:60">
+    <div class="card" style="width:100%;max-width:470px;padding:22px;margin-top:36px">
+      <div class="row between" style="margin-bottom:16px">
+        <span id="addTitle" style="font-size:18px;font-weight:800">Add</span>
+        <button id="closeAdd" class="btn" style="padding:4px 10px">&times;</button>
+      </div>
+
+      <div id="addAcctForm" class="hidden">
+        <div class="label">Institution</div>
+        <select id="aInst" class="field"></select>
+        <input id="aNewInst" class="field hidden" placeholder="New institution name">
+        <div class="label">Account name</div>
+        <input id="aName" class="field" placeholder="e.g. Roth IRA (Jared)">
+        <div class="row" style="gap:10px">
+          <div style="flex:1"><div class="label">Last four</div><input id="aLast" class="field" placeholder="optional"></div>
+          <div style="flex:1"><div class="label">Balance</div><input id="aBal" class="field" type="number" step="0.01" placeholder="optional"></div>
+        </div>
+        <div class="row" style="gap:10px">
+          <div style="flex:1"><div class="label">Owner</div><select id="aOwner" class="field"></select></div>
+          <div style="flex:1"><div class="label">Kind</div><select id="aKind" class="field"></select></div>
+        </div>
+        <div class="row wrapf" style="gap:12px;align-items:flex-end;margin-bottom:14px">
+          <label class="row" style="gap:7px;font-size:13px;font-weight:600"><input type="checkbox" id="aLocked"> Locked (CD, retirement, etc.)</label>
+          <div style="flex:1;min-width:150px"><div class="label">Locked until (optional)</div>
+            <input id="aUntil" type="date" class="mi" style="border-color:var(--line)"></div>
+        </div>
+      </div>
+
+      <div id="addEnvForm" class="hidden">
+        <div class="label">Envelope name</div>
+        <input id="eName" class="field" placeholder="e.g. Christmas Fund">
+        <div class="row" style="gap:10px">
+          <div style="flex:1"><div class="label">Owner</div><select id="eOwner" class="field"></select></div>
+          <div style="flex:1"><div class="label">Type</div><select id="eType" class="field"></select></div>
+        </div>
+        <div class="label">Category</div>
+        <input id="eCat" class="field" list="catlist" placeholder="e.g. Reserves">
+        <div class="label">Parent envelope (optional)</div>
+        <select id="eParent" class="field"></select>
+      </div>
+
+      <button id="addSave" class="primary">Save</button>
+      <p class="muted" style="margin-top:10px;line-height:1.55">
+        A new account starts with no envelope attached &mdash; link it by editing an amount on the
+        Envelopes screen, or tell me and I&rsquo;ll write the query.
+      </p>
+    </div>
+  </div>
+
   <!-- MANAGE VIEW -->
   <div id="viewManage" class="hidden">
-    <div class="row wrapf" style="gap:6px;margin-bottom:14px">
-      <button class="chip on" data-mtab="accounts">Accounts</button>
-      <button class="chip" data-mtab="envelopes">Envelopes</button>
+    <div class="row between wrapf" style="gap:10px;margin-bottom:14px">
+      <div class="row wrapf" style="gap:6px">
+        <button class="chip on" data-mtab="accounts">Accounts</button>
+        <button class="chip" data-mtab="envelopes">Envelopes</button>
+      </div>
+      <div class="row wrapf" style="gap:8px">
+        <button id="newAcct" class="btn">+ Account</button>
+        <button id="newEnv" class="btn">+ Envelope</button>
+      </div>
     </div>
     <div id="manageBody"></div>
     <p class="muted" style="margin-top:22px;line-height:1.6">
@@ -348,6 +409,7 @@ function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(m){
 
 var token=null, raw=[], accts=[], txns=[], rules=[], notes=[], allocs=[], openSet={}, view="all", tab="envelopes", mtab="accounts", editing=false;
 var splitRows=[];
+var balMode="available";
 
 function saveToken(t){ token=t; try{ localStorage.setItem("ledger_token",t); }catch(e){} }
 function clearToken(){ token=null; try{ localStorage.removeItem("ledger_token"); }catch(e){} }
@@ -447,25 +509,76 @@ function compute(list){
         locked:!!a.is_locked,bal:a.balance};
     }).sort(function(x,y){ return y.value-x.value; });
     var o={}; for(var k in e) o[k]=e[k];
-    o.total=total;o.liquid=liquid;o.locked=locked;o.hasPct=hasPct;o.places=places;
+    o.own=total;o.total=total;o.liquid=liquid;o.locked=locked;o.hasPct=hasPct;o.places=places;
     return o;
   });
 }
 
-function envHtml(e){
+/* unsettled charges per envelope */
+function pendingByEnv(){
+  var m={};
+  txns.forEach(function(t){
+    if(t.status!=="categorized") return;
+    (t.allocations||[]).forEach(function(al){
+      if(al.kind!=="envelope"||!al.envelope_id) return;
+      m[al.envelope_id]=(m[al.envelope_id]||0)+Number(al.amount||0);
+    });
+  });
+  return m;
+}
+
+/* attach pending, then roll children up into parents */
+function withRollup(rows){
+  var pend=pendingByEnv();
+  var byId={};
+  rows.forEach(function(r){
+    r.pendOwn=pend[r.id]||0;
+    r.pend=r.pendOwn;
+    r.kids=[];
+    byId[r.id]=r;
+  });
+  rows.forEach(function(r){
+    if(r.parent_id && byId[r.parent_id] && r.parent_id!==r.id){
+      byId[r.parent_id].kids.push(r);
+    }
+  });
+  rows.forEach(function(r){
+    if(!r.kids.length) return;
+    r.kids.forEach(function(k){
+      r.total+=k.total; r.liquid+=k.liquid; r.locked+=k.locked; r.pend+=k.pend;
+      if(k.hasPct) r.hasPct=true;
+    });
+  });
+  rows.forEach(function(r){ r.avail=r.total-r.pend; });
+  return rows;
+}
+
+function shownVal(e){ return balMode==="cash" ? e.total : e.avail; }
+
+function envHtml(e, depth){
+  depth=depth||0;
   var m=TYPE_META[e.type]||TYPE_META.flow;
   var isOpen=!!openSet[e.id];
-  var pct=(e.type==="goal"&&e.target_amount)?Math.min(100,(e.total/Number(e.target_amount))*100):null;
-  var h='<div class="env"><button class="env-head" data-env="'+esc(e.id)+'">'+
+  var val=shownVal(e);
+  var pct=(e.type==="goal"&&e.target_amount)?Math.min(100,(val/Number(e.target_amount))*100):null;
+  var pad=depth?(16+depth*18):16;
+  var h='<div class="env"'+(depth?' style="background:var(--paper)"':'')+
+    '><button class="env-head" data-env="'+esc(e.id)+'" style="padding-left:'+pad+'px">'+
     '<span class="row wrapf" style="gap:7px;min-width:0">'+
       '<span style="color:var(--ink-soft);font-size:11px">'+(isOpen?"\u25be":"\u25b8")+'</span>'+
-      '<span class="env-name">'+esc(e.name)+'</span>'+
+      '<span class="env-name"'+(depth?' style="font-weight:600"':'')+'>'+esc(e.name)+'</span>'+
       '<span class="tag" style="color:'+m.c+';background:'+m.b+'">'+m.label+'</span>'+
+      (e.kids && e.kids.length?'<span class="muted">'+e.kids.length+' sub</span>':'')+
       (e.places.length>1?'<span class="muted">'+e.places.length+' places</span>':'')+
+      (e.pend>0?'<span class="tag" style="color:var(--gold);background:var(--gold-soft)">'+fmt(e.pend)+' pending</span>':'')+
       (e.hasPct?'<span class="tag" style="color:var(--gold);background:var(--gold-soft)">computed</span>':'')+
-    '</span><span class="env-total num">'+fmt(e.total)+'</span></button>';
+    '</span><span class="env-total num">'+fmt(val)+'</span></button>';
   if(pct!==null) h+='<div class="bar"><i style="width:'+pct.toFixed(0)+'%"></i></div>';
   if(isOpen){
+    if(e.pend>0) h+='<div style="padding:7px 16px 3px 32px;font-size:11.5px;background:var(--paper)">'+
+      '<span style="color:var(--ink-soft)">cash</span> <b class="num">'+fmt(e.total)+'</b>'+
+      ' <span style="color:var(--gold)">\u2212 '+fmt(e.pend)+' unsettled</span>'+
+      ' <span style="color:var(--ink-soft)">=</span> <b class="num" style="color:var(--green)">'+fmt(e.avail)+' available</b></div>';
     if(e.note) h+='<div style="padding:7px 16px 2px 32px;font-size:11.5px;color:var(--ink-soft);font-style:italic;line-height:1.5;background:var(--paper)">'+esc(e.note)+'</div>';
     h+=e.places.map(function(p){
       return '<div class="place"><span class="row" style="gap:7px;min-width:0">'+
@@ -478,25 +591,31 @@ function envHtml(e){
         (p.missing?"set balance":fmt(p.value))+'</span></div>';
     }).join("");
   }
-  return h+'</div>';
+  h+='</div>';
+  if(e.kids && e.kids.length){
+    h+=e.kids.sort(function(a,b){ return shownVal(b)-shownVal(a); })
+        .map(function(k){ return envHtml(k, depth+1); }).join("");
+  }
+  return h;
 }
 
 function renderEnvelopes(){
-  var rows=compute(raw);
-  var shown=view==="all"?rows:rows.filter(function(e){ return e.owner===view; });
-  var grand=0,gl=0,gk=0;
-  shown.forEach(function(r){ grand+=r.total; gl+=r.liquid; gk+=r.locked; });
-  $("grand").textContent=fmt(grand);
+  var rows=withRollup(compute(raw));
+  var tops=rows.filter(function(e){ return !e.parent_id || !rows.some(function(p){ return p.id===e.parent_id; }); });
+  var shown=view==="all"?tops:tops.filter(function(e){ return e.owner===view; });
+  var grand=0,gp=0;
+  shown.forEach(function(r){ grand+=r.total; gp+=r.pend; });
+  $("grand").textContent=fmt(balMode==="cash"?grand:(grand-gp));
   $("grandSub").innerHTML=
-    '<span style="font-size:12.5px;color:var(--green);font-weight:600">'+fmt(gl)+' liquid</span>'+
-    '<span style="font-size:12.5px;color:var(--slate);font-weight:600">'+fmt(gk)+' in CDs</span>'+
+    (gp>0?'<span style="font-size:12.5px;color:var(--gold);font-weight:600">'+fmt(gp)+' unsettled</span>':'')+
+    '<span style="font-size:12.5px;color:var(--ink-soft)">cash '+fmt(grand)+'</span>'+
     '<span style="font-size:12.5px;color:var(--ink-soft)">'+shown.length+' envelopes</span>';
 
   var owners = view==="all" ? OWNERS : [view];
   $("board").innerHTML = owners.map(function(o){
-    var mine=rows.filter(function(e){ return e.owner===o; });
+    var mine=tops.filter(function(e){ return e.owner===o; });
     if(!mine.length) return "";
-    var sum=0; mine.forEach(function(r){ sum+=r.total; });
+    var sum=0; mine.forEach(function(r){ sum+=shownVal(r); });
     var cats={};
     mine.forEach(function(e){ var c=e.category||"Other"; if(!cats[c]) cats[c]=[]; cats[c].push(e); });
     var names=Object.keys(cats).sort(function(a,b){
@@ -504,12 +623,25 @@ function renderEnvelopes(){
       return (ia<0?99:ia)-(ib<0?99:ib); });
     var body=names.map(function(c){
       return '<div class="cat">'+esc(c)+'</div>'+
-        cats[c].sort(function(a,b){ return b.total-a.total; }).map(envHtml).join(""); }).join("");
+        cats[c].sort(function(a,b){ return shownVal(b)-shownVal(a); }).map(function(e){ return envHtml(e,0); }).join(""); }).join("");
     var title=o==="Joint"?"Shared":o;
     var cls=(view==="all"&&o==="Joint")?"panel span2":"panel";
     return '<section class="'+cls+'"><div class="panel-head"><span class="panel-title">'+esc(title)+
       '</span><span class="panel-total num">'+fmt(sum)+'</span></div>'+body+'</section>';
   }).join("");
+}
+
+function parentSel(e){
+  var kidIds={};
+  raw.forEach(function(x){ if(x.parent_id===e.id) kidIds[x.id]=1; });
+  var opts=raw.filter(function(x){
+    return x.id!==e.id && !kidIds[x.id] && !x.parent_id;
+  }).sort(function(a,b){ return (a.name||"").localeCompare(b.name||""); });
+  return '<select class="mi" data-t="envelopes" data-id="'+esc(e.id)+'" data-f="parent_id">'+
+    '<option value="">\u2014 none \u2014</option>'+
+    opts.map(function(o){
+      return '<option value="'+esc(o.id)+'"'+(e.parent_id===o.id?" selected":"")+'>'+esc(o.name)+'</option>';
+    }).join("")+'</select>';
 }
 
 function sel(val, opts, cls, attrs){
@@ -553,13 +685,14 @@ function renderManage(){
     body.innerHTML='<section class="panel">'+
       '<div class="panel-head"><span class="panel-title">Envelopes</span>'+
       '<span class="muted">'+sorted.length+' total</span></div>'+
-      '<div class="mrow env-cols mhead"><span>Name</span><span>Owner</span><span>Type</span><span>Category</span></div>'+
+      '<div class="mrow env-cols mhead"><span>Name</span><span>Owner</span><span>Type</span><span>Category</span><span>Parent</span></div>'+
       sorted.map(function(e){
         return '<div class="mrow env-cols">'+
           '<input class="mi" value="'+esc(e.name)+'" data-t="envelopes" data-id="'+esc(e.id)+'" data-f="name">'+
           sel(e.owner||"Joint",OWNERS,"mi",'data-t="envelopes" data-id="'+esc(e.id)+'" data-f="owner"')+
           sel(e.type||"flow",TYPES,"mi",'data-t="envelopes" data-id="'+esc(e.id)+'" data-f="type"')+
           '<input class="mi" list="catlist" value="'+esc(e.category||"")+'" placeholder="uncategorized" data-t="envelopes" data-id="'+esc(e.id)+'" data-f="category">'+
+          parentSel(e)+
         '</div>';
       }).join("")+'</section>';
   }
@@ -1115,11 +1248,105 @@ async function addNote(){
   finally{ b.disabled=false; b.textContent="Save note"; }
 }
 
+
+/* ================= ADD ACCOUNT / ENVELOPE ================= */
+function openAdd(kind){
+  $("addTitle").textContent = kind==="account" ? "Add account" : "Add envelope";
+  $("addAcctForm").classList.toggle("hidden", kind!=="account");
+  $("addEnvForm").classList.toggle("hidden", kind!=="envelope");
+  $("addModal").setAttribute("data-kind",kind);
+  if(kind==="account"){
+    var insts={};
+    accts.forEach(function(a){ if(a.institutions) insts[a.institutions.name]=1; });
+    var names=Object.keys(insts).sort();
+    $("aInst").innerHTML=names.map(function(n){
+      return '<option value="'+esc(n)+'">'+esc(n)+'</option>'; }).join("")+
+      '<option value="__new">+ new institution\u2026</option>';
+    $("aNewInst").classList.add("hidden");
+    $("aName").value=""; $("aLast").value=""; $("aBal").value="";
+    $("aOwner").innerHTML=OWNERS.map(function(o){ return '<option>'+o+'</option>'; }).join("");
+    $("aKind").innerHTML=KINDS.map(function(k){
+      return '<option value="'+k+'">'+k.replace("_"," ")+'</option>'; }).join("");
+    $("aLocked").checked=false; $("aUntil").value="";
+  }else{
+    $("eName").value="";
+    $("eOwner").innerHTML=OWNERS.map(function(o){ return '<option>'+o+'</option>'; }).join("");
+    $("eType").innerHTML=TYPES.map(function(t){
+      return '<option value="'+t+'">'+t+'</option>'; }).join("");
+    $("eCat").value="";
+    var tops=raw.filter(function(x){ return !x.parent_id; })
+      .sort(function(a,b){ return (a.name||"").localeCompare(b.name||""); });
+    $("eParent").innerHTML='<option value="">\u2014 none \u2014</option>'+
+      tops.map(function(o){ return '<option value="'+esc(o.id)+'">'+esc(o.name)+'</option>'; }).join("");
+  }
+  $("addModal").classList.remove("hidden");
+}
+function closeAdd(){ $("addModal").classList.add("hidden"); }
+
+async function saveNew(){
+  var kind=$("addModal").getAttribute("data-kind");
+  var b=$("addSave"); b.disabled=true; b.textContent="Saving\u2026";
+  try{
+    if(kind==="account"){
+      var instName=$("aInst").value;
+      if(instName==="__new"){
+        instName=$("aNewInst").value.trim();
+        if(!instName) throw new Error("Name the new institution");
+      }
+      var instId=null;
+      for(var i=0;i<accts.length;i++){
+        if(accts[i].institutions && accts[i].institutions.name===instName){ instId=accts[i].institution_id; break; }
+      }
+      if(!instId){
+        var ir=await fetch(SUPABASE_URL+"/rest/v1/institutions?name=eq."+encodeURIComponent(instName)+"&select=id",{headers:headers()});
+        var idata=await ir.json();
+        if(ir.ok && idata.length) instId=idata[0].id;
+      }
+      if(!instId){
+        var cr=await fetch(SUPABASE_URL+"/rest/v1/institutions",{
+          method:"POST",headers:headers({Prefer:"return=representation"}),
+          body:JSON.stringify({name:instName,color:"#5A6B78"})});
+        var cd=await cr.json();
+        if(!cr.ok) throw new Error(cd.message||"Could not create institution");
+        instId=cd[0].id;
+      }
+      if(!$("aName").value.trim()) throw new Error("Give the account a name");
+      var body={institution_id:instId,name:$("aName").value.trim(),
+        owner:$("aOwner").value,kind:$("aKind").value,is_locked:$("aLocked").checked};
+      if($("aLast").value.trim()) body.last_four=$("aLast").value.trim();
+      if($("aUntil").value) body.locked_until=$("aUntil").value;
+      if($("aBal").value!==""){ body.balance=parseFloat($("aBal").value);
+        body.balance_as_of=new Date().toISOString().slice(0,10); }
+      var r=await fetch(SUPABASE_URL+"/rest/v1/accounts",{
+        method:"POST",headers:headers({Prefer:"return=minimal"}),body:JSON.stringify(body)});
+      if(!r.ok){ var e1=await r.json(); throw new Error(e1.message||"Save failed"); }
+      toast("Account added");
+    }else{
+      if(!$("eName").value.trim()) throw new Error("Give the envelope a name");
+      var eb={name:$("eName").value.trim(),owner:$("eOwner").value,type:$("eType").value};
+      if($("eCat").value.trim()) eb.category=$("eCat").value.trim();
+      if($("eParent").value) eb.parent_id=$("eParent").value;
+      var r2=await fetch(SUPABASE_URL+"/rest/v1/envelopes",{
+        method:"POST",headers:headers({Prefer:"return=minimal"}),body:JSON.stringify(eb)});
+      if(!r2.ok){ var e2=await r2.json(); throw new Error(e2.message||"Save failed"); }
+      toast("Envelope added");
+    }
+    closeAdd();
+    await load();
+  }catch(e){ toast(e.message); }
+  finally{ b.disabled=false; b.textContent="Save"; }
+}
+
 $("signin").addEventListener("click",signIn);
 $("refresh").addEventListener("click",load);
 $("signout").addEventListener("click",signOut);
 ["email","password"].forEach(function(id){
   $(id).addEventListener("keydown",function(e){ if(e.key==="Enter") signIn(); }); });
+
+var bchips=document.querySelectorAll("[data-bal]");
+for(var bi=0;bi<bchips.length;bi++) bchips[bi].addEventListener("click",function(){
+  for(var k=0;k<bchips.length;k++) bchips[k].classList.remove("on");
+  this.classList.add("on"); balMode=this.getAttribute("data-bal"); draw(); });
 
 var chips=document.querySelectorAll("[data-view]");
 for(var c=0;c<chips.length;c++) chips[c].addEventListener("click",function(){
@@ -1136,6 +1363,13 @@ for(var t=0;t<tabs.length;t++) tabs[t].addEventListener("click",function(){
   for(var k=0;k<tabs.length;k++) tabs[k].classList.remove("on");
   this.classList.add("on"); tab=this.getAttribute("data-tab"); draw(); });
 
+$("newAcct").addEventListener("click",function(){ openAdd("account"); });
+$("newEnv").addEventListener("click",function(){ openAdd("envelope"); });
+$("closeAdd").addEventListener("click",closeAdd);
+$("addSave").addEventListener("click",saveNew);
+$("addModal").addEventListener("click",function(e){ if(e.target===this) closeAdd(); });
+$("aInst").addEventListener("change",function(){
+  $("aNewInst").classList.toggle("hidden", this.value!=="__new"); });
 $("nAdd").addEventListener("click",addNote);
 var nfc=document.querySelectorAll("[data-nf]");
 for(var nf=0;nf<nfc.length;nf++) nfc[nf].addEventListener("click",function(){
