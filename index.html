@@ -124,6 +124,9 @@
     <div class="row wrapf" style="gap:8px">
       <button class="tab on" data-tab="envelopes">Envelopes</button>
       <button class="tab" data-tab="txns">Transactions</button>
+      <button class="tab" data-tab="history">History</button>
+      <button class="tab" data-tab="kids">Kids</button>
+      <button class="tab" data-tab="insurance">Insurance</button>
       <button class="tab" data-tab="notes">Notes</button>
       <button class="tab" data-tab="manage">Manage</button>
       <button class="tab" data-tab="export">Export</button>
@@ -276,6 +279,138 @@
     </div>
   </div>
 
+
+
+  <!-- INSURANCE VIEW -->
+  <div id="viewInsurance" class="hidden">
+    <div class="card" style="padding:15px 18px;margin-bottom:14px">
+      <div class="row between wrapf" style="gap:12px">
+        <div style="flex:1;min-width:260px;font-size:13px;line-height:1.6;color:var(--ink-soft)">
+          Kept separate from envelopes and every total in the app &mdash; life insurance isn&rsquo;t
+          an asset. This is a reference list: who the insurer is, what type of policy, what it pays
+          out, and how to reach them. A dash means the value hasn&rsquo;t been recorded;
+          <b>n/a</b> means a term policy has no such value.
+        </div>
+        <button id="newPolicy" class="btn" style="background:var(--teal);color:#fff;border-color:var(--teal);padding:10px 18px">+ Add policy</button>
+      </div>
+    </div>
+    <div id="insBody"></div>
+  </div>
+
+  <!-- POLICY MODAL -->
+  <div id="policyModal" class="hidden" style="position:fixed;inset:0;background:rgba(18,35,46,.45);display:flex;align-items:flex-start;justify-content:center;padding:18px;overflow-y:auto;z-index:60">
+    <div class="card" style="width:100%;max-width:520px;padding:22px;margin-top:30px">
+      <div class="row between" style="margin-bottom:16px">
+        <span id="pTitle" style="font-size:18px;font-weight:800">Add policy</span>
+        <button id="closePolicy" class="btn" style="padding:4px 10px">&times;</button>
+      </div>
+      <div class="label">Insurer *</div>
+      <input id="pInsurer" class="field" placeholder="e.g. Thrivent">
+      <div class="label">Policy name</div>
+      <input id="pName" class="field" placeholder="optional — e.g. Indexed Whole Life">
+      <div class="row" style="gap:10px">
+        <div style="flex:1"><div class="label">Insured</div><select id="pInsured" class="field"></select></div>
+        <div style="flex:1"><div class="label">Type</div><select id="pType" class="field"></select></div>
+      </div>
+      <div class="row" style="gap:10px">
+        <div style="flex:1"><div class="label">Policy last four</div><input id="pLast" class="field" placeholder="optional"></div>
+        <div style="flex:1"><div class="label">Face value</div><input id="pFace" class="field" type="number" step="0.01" placeholder="optional"></div>
+      </div>
+      <div class="row" style="gap:10px">
+        <div style="flex:1"><div class="label">Cash value</div><input id="pCash" class="field" type="number" step="0.01" placeholder="optional"></div>
+        <div style="flex:1"><div class="label">Surrender value</div><input id="pSurr" class="field" type="number" step="0.01" placeholder="optional"></div>
+      </div>
+      <div class="row" style="gap:10px">
+        <div style="flex:1"><div class="label">Premium</div><input id="pPrem" class="field" type="number" step="0.01" placeholder="optional"></div>
+        <div style="flex:1"><div class="label">Frequency</div><input id="pFreq" class="field" list="freqlist" placeholder="monthly"></div>
+      </div>
+      <div class="label">Beneficiary</div>
+      <input id="pBene" class="field" placeholder="optional">
+      <div class="label">Contact &mdash; agent, phone, claims line</div>
+      <input id="pContact" class="field" placeholder="optional">
+      <div class="label">Note</div>
+      <textarea id="pNote" class="field" rows="2" style="resize:vertical" placeholder="optional"></textarea>
+      <div class="row" style="gap:10px">
+        <button id="pSave" class="primary" style="flex:1">Save</button>
+        <button id="pDel" class="btn hidden" style="color:var(--rust);padding:12px 16px">Remove</button>
+      </div>
+      <p class="muted" style="margin-top:10px;line-height:1.55">
+        Leave anything blank you don&rsquo;t have. Term and group policies have no cash or
+        surrender value &mdash; those fields are simply ignored for them.
+      </p>
+    </div>
+  </div>
+
+
+  <!-- KIDS VIEW -->
+  <div id="viewKids" class="hidden">
+    <div class="card" style="padding:15px 18px;margin-bottom:14px">
+      <div class="row between wrapf" style="gap:12px">
+        <div style="flex:1;min-width:250px;font-size:13px;line-height:1.6;color:var(--ink-soft)">
+          The children&rsquo;s accounts, kept separate from household envelopes and every total.
+          A dash means no balance recorded yet.
+        </div>
+        <button id="newKid" class="btn" style="background:var(--teal);color:#fff;border-color:var(--teal);padding:10px 18px">+ Add account</button>
+      </div>
+    </div>
+    <div id="kidsBody"></div>
+  </div>
+
+  <!-- KID MODAL -->
+  <div id="kidModal" class="hidden" style="position:fixed;inset:0;background:rgba(18,35,46,.45);display:flex;align-items:flex-start;justify-content:center;padding:18px;overflow-y:auto;z-index:60">
+    <div class="card" style="width:100%;max-width:440px;padding:22px;margin-top:40px">
+      <div class="row between" style="margin-bottom:16px">
+        <span id="kTitle" style="font-size:18px;font-weight:800">Add account</span>
+        <button id="closeKid" class="btn" style="padding:4px 10px">&times;</button>
+      </div>
+      <div class="label">Child</div>
+      <select id="kChild" class="field"></select>
+      <input id="kNewChild" class="field hidden" placeholder="Child's name">
+      <div class="label">Account type</div>
+      <input id="kType" class="field" list="kidtypes" placeholder="e.g. 529 Plan">
+      <div class="row" style="gap:10px">
+        <div style="flex:1"><div class="label">Institution</div><input id="kInst" class="field" placeholder="optional"></div>
+        <div style="flex:1"><div class="label">Last four</div><input id="kLast" class="field" placeholder="optional"></div>
+      </div>
+      <div class="label">Balance</div>
+      <input id="kBal" class="field" type="number" step="0.01" placeholder="leave blank if unknown">
+      <div class="label">Note</div>
+      <textarea id="kNote" class="field" rows="2" style="resize:vertical" placeholder="optional"></textarea>
+      <div class="row" style="gap:10px">
+        <button id="kSave" class="primary" style="flex:1">Save</button>
+        <button id="kDel" class="btn hidden" style="color:var(--rust);padding:12px 16px">Remove</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY VIEW -->
+  <div id="viewHistory" class="hidden">
+    <div class="grid">
+      <section class="panel" style="grid-column:1 / -1">
+        <div class="panel-head">
+          <span class="panel-title">History</span>
+          <div class="row wrapf" style="gap:6px">
+            <button class="chip on" data-hm="compare">Compare</button>
+            <button class="chip" data-hm="combined">Combined</button>
+            <button class="chip" data-hr="90">90d</button>
+            <button class="chip on" data-hr="365">1y</button>
+            <button class="chip" data-hr="3650">All</button>
+          </div>
+        </div>
+        <div id="chart"></div>
+      </section>
+      <section class="panel span2">
+        <div class="panel-head"><span class="panel-title">Envelopes to chart</span>
+          <button id="histClear" class="btn" style="padding:3px 10px;font-size:11.5px">Clear</button></div>
+        <div id="histPick" style="padding:10px 12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:2px"></div>
+      </section>
+    </div>
+    <p class="muted" style="margin-top:18px;line-height:1.6">
+      Every balance edit writes a dated snapshot, so this fills in over time rather than needing
+      anything set up. Percentage-based holdings aren&rsquo;t charted &mdash; their value is computed
+      from an account balance rather than stored, so there&rsquo;s no snapshot behind them.
+    </p>
+  </div>
 
   <!-- NOTES VIEW -->
   <div id="viewNotes" class="hidden">
@@ -435,6 +570,10 @@
 </div>
 
 <div id="toast"></div>
+<datalist id="kidtypes"><option value="Kids Savings"></option><option value="Trump Account"></option>
+  <option value="529 Plan"></option><option value="Custodial Brokerage"></option></datalist>
+<datalist id="freqlist"><option value="monthly"></option><option value="quarterly"></option>
+  <option value="annual"></option><option value="per pay period"></option></datalist>
 <datalist id="catlist">
   <option value="Daily"></option><option value="Reserves"></option><option value="Goals"></option>
   <option value="Giving"></option><option value="Retirement"></option><option value="Long Term"></option>
@@ -468,7 +607,7 @@ function fmt(n){ return (n||0).toLocaleString("en-US",{style:"currency",currency
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(m){
   return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]; }); }
 
-var token=null, raw=[], accts=[], txns=[], rules=[], notes=[], allocs=[], openSet={}, view="all", tab="envelopes", mtab="accounts", editing=false;
+var token=null, raw=[], accts=[], txns=[], rules=[], notes=[], policies=[], kids=[], snaps=[], allocs=[], openSet={}, view="all", tab="envelopes", mtab="accounts", editing=false;
 var splitRows=[];
 var balMode="available";
 
@@ -523,6 +662,9 @@ async function load(){
     var r5=await fetch(SUPABASE_URL+"/rest/v1/notes?select=*&order=created_at.desc",{headers:headers()});
     var d5=await r5.json();
     notes = r5.ok ? d5 : [];
+    await loadPolicies();
+    await loadKids();
+    await loadHistory();
     draw();
   }catch(e){
     var el=$("loadErr");
@@ -769,10 +911,16 @@ function draw(){
   $("viewTxns").classList.add("hidden");
   $("viewNotes").classList.add("hidden");
   $("viewExport").classList.add("hidden");
+  $("viewInsurance").classList.add("hidden");
+  $("viewKids").classList.add("hidden");
+  $("viewHistory").classList.add("hidden");
   if(tab==="envelopes"){ $("viewEnvelopes").classList.remove("hidden"); renderEnvelopes(); wireEnv(); }
   else if(tab==="txns"){ $("viewTxns").classList.remove("hidden"); renderTxns(); }
   else if(tab==="notes"){ $("viewNotes").classList.remove("hidden"); renderNotes(); }
   else if(tab==="export"){ $("viewExport").classList.remove("hidden"); }
+  else if(tab==="insurance"){ $("viewInsurance").classList.remove("hidden"); renderInsurance(); }
+  else if(tab==="kids"){ $("viewKids").classList.remove("hidden"); renderKids(); }
+  else if(tab==="history"){ $("viewHistory").classList.remove("hidden"); renderHistory(); }
   else { $("viewManage").classList.remove("hidden"); renderManage(); }
 }
 
@@ -1405,7 +1553,7 @@ async function saveNew(){
 
 
 /* ================= EXPORT / BACKUP ================= */
-var TABLES=["institutions","envelopes","accounts","holdings","transactions","claims","allocations","merchant_rules","snapshots","notes"];
+var TABLES=["institutions","envelopes","accounts","holdings","transactions","claims","allocations","merchant_rules","snapshots","notes","insurance_policies","kids_accounts"];
 
 var DDL = [
 "-- ============================================================",
@@ -1517,6 +1665,23 @@ var DDL = [
 "create unique index uniq_txn_external on transactions(account_id, external_id) where external_id is not null;",
 "create index idx_alloc_txn on allocations(transaction_id);",
 "create index idx_snapshots_holding on snapshots(holding_id);",
+"",
+"create table insurance_policies (",
+"  id uuid primary key default gen_random_uuid(),",
+"  insurer text not null, policy_name text,",
+"  insured text check (insured in ('Jared','Kayla','Both','Other')) default 'Jared',",
+"  policy_type text check (policy_type in ('term','whole','universal','group_term','other')) default 'whole',",
+"  last_four text, face_value numeric(14,2), cash_value numeric(14,2),",
+"  surrender_value numeric(14,2), premium numeric(12,2), premium_frequency text,",
+"  beneficiary text, contact text, values_as_of date, note text,",
+"  active boolean default true, created_at timestamptz default now());",
+"",
+"create table kids_accounts (",
+"  id uuid primary key default gen_random_uuid(),",
+"  child text not null, account_type text, institution text, last_four text,",
+"  balance numeric(14,2), balance_as_of date, note text,",
+"  active boolean default true, sort_order int default 100,",
+"  created_at timestamptz default now());",
 "",
 "-- Row Level Security: any authenticated household member has full access.",
 "-- (Supabase-specific; drop or adapt for other Postgres hosts.)",
@@ -1721,6 +1886,19 @@ async function exportSummaryMD(){
       });
       L.push("");
     });
+    if(policies.length){
+      L.push("## Insurance (not an asset \u2014 reference only)");
+      L.push("");
+      L.push("| Insurer | Policy | Insured | Type | Face | Cash | Surrender | Contact |");
+      L.push("|---|---|---|---|---|---|---|---|");
+      policies.forEach(function(p){
+        var d=function(v){ return v==null?"":fmt(v); };
+        L.push("| "+p.insurer+" | "+(p.policy_name||"")+" | "+(p.insured||"")+" | "+
+          (PT_LABEL[p.policy_type]||p.policy_type||"")+" | "+d(p.face_value)+" | "+
+          d(p.cash_value)+" | "+d(p.surrender_value)+" | "+(p.contact||"")+" |");
+      });
+      L.push("");
+    }
     if(notes.length){
       L.push("## Notes");
       L.push("");
@@ -1733,6 +1911,395 @@ async function exportSummaryMD(){
     toast("Snapshot downloaded");
   }catch(e){ toast(e.message); }
   finally{ b.disabled=false; b.textContent="Download data snapshot (MD)"; }
+}
+
+
+/* ================= INSURANCE ================= */
+var POLICY_TYPES=["term","whole","universal","group_term","other"];
+var PT_LABEL={term:"Term",whole:"Whole life",universal:"Universal",group_term:"Group term",other:"Other"};
+var PT_COLOR={term:"var(--slate)",whole:"var(--teal)",universal:"var(--gold)",group_term:"var(--slate)",other:"var(--ink-soft)"};
+var PT_BG={term:"var(--slate-soft)",whole:"var(--teal-soft)",universal:"var(--gold-soft)",group_term:"var(--slate-soft)",other:"var(--paper)"};
+var editingPolicy=null;
+
+function val(v){ return (v===null||v===undefined||v==="") ? '<span style="color:var(--line)">\u2014</span>' : fmt(v); }
+function txt(v){ return (v===null||v===undefined||v==="") ? '<span style="color:var(--line)">\u2014</span>' : esc(v); }
+
+function renderInsurance(){
+  var groups={};
+  policies.filter(function(p){ return p.active!==false; }).forEach(function(p){
+    var k=p.insured||"Other";
+    if(!groups[k]) groups[k]=[];
+    groups[k].push(p);
+  });
+  var order=["Jared","Kayla","Both","Other"];
+  var keys=Object.keys(groups).sort(function(a,b){
+    var ia=order.indexOf(a), ib=order.indexOf(b);
+    return (ia<0?9:ia)-(ib<0?9:ib);
+  });
+  $("insBody").innerHTML = keys.length ? keys.map(function(k){
+    return '<section class="panel" style="margin-bottom:14px">'+
+      '<div class="panel-head"><span class="panel-title">'+esc(k)+'</span>'+
+      '<span class="muted">'+groups[k].length+' '+(groups[k].length===1?"policy":"policies")+'</span></div>'+
+      groups[k].map(policyCard).join("")+'</section>';
+  }).join("") : '<div class="card" style="padding:24px;font-size:13.5px;color:var(--ink-soft)">No policies yet. Use <b>+ Add policy</b> to start.</div>';
+
+  var eb=document.querySelectorAll(".pEdit");
+  for(var i=0;i<eb.length;i++) eb[i].addEventListener("click",function(){
+    openPolicy(this.getAttribute("data-id")); });
+}
+
+function policyCard(p){
+  var isTerm = p.policy_type==="term" || p.policy_type==="group_term";
+  return '<div style="padding:14px 16px;border-top:1px solid var(--paper)">'+
+    '<div class="row between wrapf" style="gap:10px;margin-bottom:9px">'+
+      '<span class="row wrapf" style="gap:8px;min-width:0">'+
+        '<span style="font-size:14.5px;font-weight:750">'+esc(p.insurer)+'</span>'+
+        (p.policy_name?'<span class="muted">'+esc(p.policy_name)+'</span>':'')+
+        '<span class="tag" style="color:'+(PT_COLOR[p.policy_type]||"var(--ink-soft)")+';background:'+(PT_BG[p.policy_type]||"var(--paper)")+'">'+
+          esc(PT_LABEL[p.policy_type]||p.policy_type)+'</span>'+
+        (p.last_four?'<span class="muted">\u2026'+esc(p.last_four)+'</span>':'')+
+      '</span>'+
+      '<button class="btn pEdit" data-id="'+esc(p.id)+'" style="padding:4px 11px;font-size:11.5px">Edit</button>'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px 16px">'+
+      cell("Face value", val(p.face_value), true)+
+      cell("Cash value", isTerm?'<span style="color:var(--line)">n/a</span>':val(p.cash_value))+
+      cell("Surrender value", isTerm?'<span style="color:var(--line)">n/a</span>':val(p.surrender_value))+
+      cell("Premium", p.premium?fmt(p.premium)+(p.premium_frequency?'<span class="muted"> /'+esc(p.premium_frequency).slice(0,2)+'</span>':''):'<span style="color:var(--line)">\u2014</span>')+
+    '</div>'+
+    ((p.beneficiary||p.contact||p.note)?
+      '<div style="margin-top:10px;padding-top:9px;border-top:1px solid var(--paper);font-size:12px;line-height:1.6;color:var(--ink-soft)">'+
+        (p.beneficiary?'<div><b style="color:var(--ink)">Beneficiary:</b> '+esc(p.beneficiary)+'</div>':'')+
+        (p.contact?'<div><b style="color:var(--ink)">Contact:</b> '+esc(p.contact)+'</div>':'')+
+        (p.note?'<div style="font-style:italic;margin-top:3px">'+esc(p.note)+'</div>':'')+
+      '</div>' : '')+
+  '</div>';
+}
+
+function cell(label, v, strong){
+  return '<div><div class="eyebrow" style="font-size:9.5px;letter-spacing:1px;margin-bottom:2px">'+label+'</div>'+
+    '<div class="num" style="font-size:'+(strong?"15px":"13.5px")+';font-weight:'+(strong?"750":"650")+'">'+v+'</div></div>';
+}
+
+function openPolicy(id){
+  editingPolicy=null;
+  if(id) for(var i=0;i<policies.length;i++) if(policies[i].id===id) editingPolicy=policies[i];
+  var p=editingPolicy||{};
+  $("pTitle").textContent=editingPolicy?"Edit policy":"Add policy";
+  $("pDel").classList.toggle("hidden",!editingPolicy);
+  $("pInsurer").value=p.insurer||"";
+  $("pName").value=p.policy_name||"";
+  $("pInsured").innerHTML=["Jared","Kayla","Both","Other"].map(function(o){
+    return '<option'+(p.insured===o?" selected":"")+'>'+o+'</option>'; }).join("");
+  $("pType").innerHTML=POLICY_TYPES.map(function(t){
+    return '<option value="'+t+'"'+(p.policy_type===t?" selected":"")+'>'+PT_LABEL[t]+'</option>'; }).join("");
+  $("pLast").value=p.last_four||"";
+  $("pFace").value=p.face_value!=null?p.face_value:"";
+  $("pCash").value=p.cash_value!=null?p.cash_value:"";
+  $("pSurr").value=p.surrender_value!=null?p.surrender_value:"";
+  $("pPrem").value=p.premium!=null?p.premium:"";
+  $("pFreq").value=p.premium_frequency||"";
+  $("pBene").value=p.beneficiary||"";
+  $("pContact").value=p.contact||"";
+  $("pNote").value=p.note||"";
+  $("policyModal").classList.remove("hidden");
+}
+function closePolicy(){ $("policyModal").classList.add("hidden"); }
+
+function numOrNull(id){
+  var v=$(id).value;
+  if(v==="") return null;
+  var n=parseFloat(v);
+  return isNaN(n)?null:n;
+}
+function strOrNull(id){ var v=$(id).value.trim(); return v===""?null:v; }
+
+async function savePolicy(){
+  if(!$("pInsurer").value.trim()) return toast("Insurer is required");
+  var b=$("pSave"); b.disabled=true; b.textContent="Saving\u2026";
+  try{
+    var body={
+      insurer:$("pInsurer").value.trim(), policy_name:strOrNull("pName"),
+      insured:$("pInsured").value, policy_type:$("pType").value,
+      last_four:strOrNull("pLast"), face_value:numOrNull("pFace"),
+      cash_value:numOrNull("pCash"), surrender_value:numOrNull("pSurr"),
+      premium:numOrNull("pPrem"), premium_frequency:strOrNull("pFreq"),
+      beneficiary:strOrNull("pBene"), contact:strOrNull("pContact"),
+      note:strOrNull("pNote")
+    };
+    if(body.cash_value!=null||body.surrender_value!=null||body.face_value!=null)
+      body.values_as_of=new Date().toISOString().slice(0,10);
+    var r;
+    if(editingPolicy){
+      r=await fetch(SUPABASE_URL+"/rest/v1/insurance_policies?id=eq."+editingPolicy.id,{
+        method:"PATCH",headers:headers({Prefer:"return=minimal"}),body:JSON.stringify(body)});
+    }else{
+      r=await fetch(SUPABASE_URL+"/rest/v1/insurance_policies",{
+        method:"POST",headers:headers({Prefer:"return=minimal"}),body:JSON.stringify(body)});
+    }
+    if(!r.ok){ var e=await r.json(); throw new Error(e.message||"Save failed"); }
+    toast(editingPolicy?"Policy updated":"Policy added");
+    closePolicy();
+    await loadPolicies();
+    await loadKids();
+    await loadHistory();
+    draw();
+  }catch(e){ toast(e.message); }
+  finally{ b.disabled=false; b.textContent="Save"; }
+}
+
+async function deletePolicy(){
+  if(!editingPolicy) return;
+  if(!confirm("Remove this policy from the list?")) return;
+  await fetch(SUPABASE_URL+"/rest/v1/insurance_policies?id=eq."+editingPolicy.id,
+    {method:"DELETE",headers:headers({Prefer:"return=minimal"})});
+  toast("Removed"); closePolicy(); await loadPolicies(); draw();
+}
+
+async function loadPolicies(){
+  try{
+    var r=await fetch(SUPABASE_URL+"/rest/v1/insurance_policies?select=*&order=insured.asc,insurer.asc",{headers:headers()});
+    var d=await r.json();
+    policies = r.ok ? d : [];
+  }catch(e){ policies=[]; }
+}
+
+
+/* ================= KIDS ACCOUNTS ================= */
+var KID_TYPES=["Kids Savings","Trump Account","529 Plan","Custodial Brokerage","Other"];
+var editingKid=null;
+
+function renderKids(){
+  var groups={};
+  kids.filter(function(k){ return k.active!==false; }).forEach(function(k){
+    if(!groups[k.child]) groups[k.child]=[];
+    groups[k.child].push(k);
+  });
+  var names=Object.keys(groups).sort();
+  $("kidsBody").innerHTML = names.length ? names.map(function(n){
+    var rows=groups[n].sort(function(a,b){ return (a.sort_order||99)-(b.sort_order||99); });
+    var known=0, anyKnown=false;
+    rows.forEach(function(r){ if(r.balance!=null){ known+=Number(r.balance); anyKnown=true; } });
+    return '<section class="panel" style="margin-bottom:14px">'+
+      '<div class="panel-head"><span class="panel-title">'+esc(n)+'</span>'+
+      '<span class="muted">'+(anyKnown?fmt(known)+" recorded":"no balances recorded")+'</span></div>'+
+      rows.map(function(k){
+        return '<div class="mrow" style="grid-template-columns:1.4fr 1fr 78px 110px 62px;gap:10px">'+
+          '<span style="font-size:13.5px;font-weight:650">'+esc(k.account_type||"Account")+'</span>'+
+          '<span class="muted">'+esc(k.institution||"")+'</span>'+
+          '<span class="muted">'+(k.last_four?"\u2026"+esc(k.last_four):"")+'</span>'+
+          '<span class="num" style="font-size:13.5px;font-weight:700">'+
+            (k.balance!=null?fmt(k.balance):'<span style="color:var(--line)">\u2014</span>')+'</span>'+
+          '<button class="btn kEdit" data-id="'+esc(k.id)+'" style="padding:3px 10px;font-size:11.5px">Edit</button>'+
+        '</div>'+
+        (k.note?'<div class="muted" style="padding:0 16px 10px 16px;font-style:italic;line-height:1.5">'+esc(k.note)+'</div>':'');
+      }).join("")+'</section>';
+  }).join("") : '<div class="card" style="padding:24px;font-size:13.5px;color:var(--ink-soft)">Nothing here yet. Use <b>+ Add account</b>.</div>';
+
+  var eb=document.querySelectorAll(".kEdit");
+  for(var i=0;i<eb.length;i++) eb[i].addEventListener("click",function(){
+    openKid(this.getAttribute("data-id")); });
+}
+
+function openKid(id){
+  editingKid=null;
+  if(id) for(var i=0;i<kids.length;i++) if(kids[i].id===id) editingKid=kids[i];
+  var k=editingKid||{};
+  $("kTitle").textContent=editingKid?"Edit account":"Add account";
+  $("kDel").classList.toggle("hidden",!editingKid);
+  var names={}; kids.forEach(function(x){ names[x.child]=1; });
+  var opts=Object.keys(names).sort();
+  if(!opts.length) opts=["Andrew","Josiah","Aravis"];
+  $("kChild").innerHTML=opts.map(function(o){
+    return '<option'+(k.child===o?" selected":"")+'>'+esc(o)+'</option>'; }).join("")+
+    '<option value="__new">+ another child\u2026</option>';
+  $("kNewChild").classList.add("hidden"); $("kNewChild").value="";
+  $("kType").value=k.account_type||"";
+  $("kInst").value=k.institution||"";
+  $("kLast").value=k.last_four||"";
+  $("kBal").value=k.balance!=null?k.balance:"";
+  $("kNote").value=k.note||"";
+  $("kidModal").classList.remove("hidden");
+}
+function closeKid(){ $("kidModal").classList.add("hidden"); }
+
+async function saveKid(){
+  var child=$("kChild").value;
+  if(child==="__new"){ child=$("kNewChild").value.trim(); if(!child) return toast("Name the child"); }
+  var b=$("kSave"); b.disabled=true; b.textContent="Saving\u2026";
+  try{
+    var body={child:child, account_type:strOrNull("kType"), institution:strOrNull("kInst"),
+      last_four:strOrNull("kLast"), balance:numOrNull("kBal"), note:strOrNull("kNote")};
+    if(body.balance!=null) body.balance_as_of=new Date().toISOString().slice(0,10);
+    var r;
+    if(editingKid) r=await fetch(SUPABASE_URL+"/rest/v1/kids_accounts?id=eq."+editingKid.id,{
+      method:"PATCH",headers:headers({Prefer:"return=minimal"}),body:JSON.stringify(body)});
+    else r=await fetch(SUPABASE_URL+"/rest/v1/kids_accounts",{
+      method:"POST",headers:headers({Prefer:"return=minimal"}),body:JSON.stringify(body)});
+    if(!r.ok){ var e=await r.json(); throw new Error(e.message||"Save failed"); }
+    toast(editingKid?"Updated":"Added");
+    closeKid(); await loadKids(); draw();
+  }catch(e){ toast(e.message); }
+  finally{ b.disabled=false; b.textContent="Save"; }
+}
+
+async function deleteKid(){
+  if(!editingKid) return;
+  if(!confirm("Remove this account?")) return;
+  await fetch(SUPABASE_URL+"/rest/v1/kids_accounts?id=eq."+editingKid.id,
+    {method:"DELETE",headers:headers({Prefer:"return=minimal"})});
+  toast("Removed"); closeKid(); await loadKids(); draw();
+}
+
+async function loadKids(){
+  try{
+    var r=await fetch(SUPABASE_URL+"/rest/v1/kids_accounts?select=*&order=child.asc,sort_order.asc",{headers:headers()});
+    var d=await r.json();
+    kids = r.ok ? d : [];
+  }catch(e){ kids=[]; }
+}
+
+/* ================= HISTORY ================= */
+var histSel={}, histMode="compare", histRange=365;
+var LINE_COLORS=["#0E7C7B","#B8892B","#B4553B","#5A6B78","#157F5B","#6A2C8F","#1560BD","#0B3D5C"];
+
+async function loadHistory(){
+  try{
+    var r=await fetch(SUPABASE_URL+"/rest/v1/snapshots?select=holding_id,amount,as_of&order=as_of.asc",{headers:headers()});
+    var d=await r.json();
+    snaps = r.ok ? d : [];
+  }catch(e){ snaps=[]; }
+}
+
+/* envelope value on each date: last snapshot per holding carried forward */
+function envSeries(envIds){
+  var hByEnv={};
+  raw.forEach(function(e){
+    (e.holdings||[]).forEach(function(h){
+      if(h.amount==null) return;          /* percentage holdings aren't snapshotted */
+      hByEnv[h.id]=e.id;
+    });
+  });
+  var rel=snaps.filter(function(s){ return envIds.indexOf(hByEnv[s.holding_id])>=0; });
+  if(!rel.length) return {dates:[],byEnv:{}};
+
+  var dates=[];
+  var seen={};
+  rel.forEach(function(s){ if(!seen[s.as_of]){ seen[s.as_of]=1; dates.push(s.as_of); } });
+  dates.sort();
+  var cutoff=new Date(Date.now()-histRange*86400000).toISOString().slice(0,10);
+  var keep=dates.filter(function(d){ return d>=cutoff; });
+  if(keep.length<2) keep=dates;
+
+  var last={}, byEnv={};
+  envIds.forEach(function(id){ byEnv[id]=[]; });
+  var idx=0;
+  var all=dates;
+  var walk={};
+  all.forEach(function(d){
+    rel.forEach(function(s){ if(s.as_of===d) last[s.holding_id]=Number(s.amount); });
+    var totals={};
+    envIds.forEach(function(id){ totals[id]=0; });
+    for(var hid in last){
+      var eid=hByEnv[hid];
+      if(totals[eid]!==undefined) totals[eid]+=last[hid];
+    }
+    walk[d]=totals;
+  });
+  keep.forEach(function(d){
+    envIds.forEach(function(id){ byEnv[id].push(walk[d][id]); });
+  });
+  return {dates:keep, byEnv:byEnv};
+}
+
+function renderHistory(){
+  var list=raw.slice().sort(function(a,b){ return (a.name||"").localeCompare(b.name||""); });
+  $("histPick").innerHTML=list.map(function(e){
+    return '<label class="row" style="gap:7px;padding:5px 9px;font-size:12.5px;cursor:pointer;border-radius:7px;'+
+      (histSel[e.id]?'background:var(--teal-soft)':'')+'">'+
+      '<input type="checkbox" class="hSel" data-id="'+esc(e.id)+'" '+(histSel[e.id]?"checked":"")+'>'+
+      esc(e.name)+'</label>';
+  }).join("");
+
+  var sels=document.querySelectorAll(".hSel");
+  for(var i=0;i<sels.length;i++) sels[i].addEventListener("change",function(){
+    var id=this.getAttribute("data-id");
+    if(this.checked) histSel[id]=1; else delete histSel[id];
+    renderHistory();
+  });
+
+  var ids=Object.keys(histSel);
+  if(!ids.length){
+    $("chart").innerHTML='<div class="muted" style="padding:40px 20px;text-align:center;line-height:1.7">'+
+      'Choose one or more envelopes to chart.<br>Pick several and switch to <b>Combined</b> to see them summed \u2014 '+
+      'House plus House Projects, for instance.</div>';
+    return;
+  }
+  var S=envSeries(ids);
+  if(S.dates.length<2){
+    $("chart").innerHTML='<div class="muted" style="padding:40px 20px;text-align:center;line-height:1.7">'+
+      'Not enough history yet \u2014 there are '+S.dates.length+' recorded point'+(S.dates.length===1?"":"s")+
+      ' for this selection.<br>Every time you edit a balance, a dated snapshot is written, so this fills in as you go.</div>';
+    return;
+  }
+  drawChart(S, ids);
+}
+
+function drawChart(S, ids){
+  var W=860, H=330, padL=64, padR=18, padT=18, padB=44;
+  var series=[];
+  if(histMode==="combined"){
+    var sum=S.dates.map(function(_,i){
+      var t=0; ids.forEach(function(id){ t+=S.byEnv[id][i]||0; }); return t; });
+    series.push({name:"Combined ("+ids.length+" envelopes)", vals:sum, color:LINE_COLORS[0]});
+  }else{
+    ids.forEach(function(id,n){
+      var nm=id;
+      for(var i=0;i<raw.length;i++) if(raw[i].id===id) nm=raw[i].name;
+      series.push({name:nm, vals:S.byEnv[id], color:LINE_COLORS[n%LINE_COLORS.length]});
+    });
+  }
+  var lo=Infinity, hi=-Infinity;
+  series.forEach(function(s){ s.vals.forEach(function(v){ if(v<lo)lo=v; if(v>hi)hi=v; }); });
+  if(lo===hi){ lo=lo-1; hi=hi+1; }
+  var span=hi-lo; lo-=span*0.1; hi+=span*0.1; if(lo>0 && lo<span) lo=0;
+  var n=S.dates.length;
+  var X=function(i){ return padL + (n<2?0:(i/(n-1))*(W-padL-padR)); };
+  var Y=function(v){ return padT + (1-(v-lo)/(hi-lo))*(H-padT-padB); };
+
+  var grid="", ticks=4;
+  for(var g=0;g<=ticks;g++){
+    var v=lo+(hi-lo)*g/ticks, y=Y(v);
+    grid+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="#E7E1D5" stroke-width="1"/>'+
+      '<text x="'+(padL-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="10.5" fill="#40525C">'+
+      (Math.abs(v)>=1000?"$"+Math.round(v/1000)+"k":"$"+Math.round(v))+'</text>';
+  }
+  var step=Math.max(1,Math.ceil(n/6)), xlab="";
+  for(var i=0;i<n;i+=step){
+    xlab+='<text x="'+X(i)+'" y="'+(H-padB+18)+'" text-anchor="middle" font-size="10.5" fill="#40525C">'+
+      S.dates[i].slice(5)+'</text>';
+  }
+  var paths=series.map(function(s){
+    var d=s.vals.map(function(v,i){ return (i?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1); }).join(" ");
+    var dots=s.vals.map(function(v,i){
+      return '<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(v).toFixed(1)+'" r="2.6" fill="'+s.color+'"><title>'+
+        esc(s.name)+" \u00b7 "+S.dates[i]+" \u00b7 "+fmt(v)+'</title></circle>'; }).join("");
+    return '<path d="'+d+'" fill="none" stroke="'+s.color+'" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round"/>'+dots;
+  }).join("");
+
+  var legend=series.map(function(s){
+    var last=s.vals[s.vals.length-1], first=s.vals[0], diff=last-first;
+    return '<span class="row" style="gap:6px;font-size:12px">'+
+      '<span style="width:11px;height:3px;border-radius:2px;background:'+s.color+'"></span>'+
+      '<b>'+esc(s.name)+'</b> <span class="num">'+fmt(last)+'</span> '+
+      '<span style="color:'+(diff>=0?"var(--green)":"var(--rust)")+'">'+(diff>=0?"+":"\u2212")+fmt(Math.abs(diff))+'</span></span>';
+  }).join("");
+
+  $("chart").innerHTML=
+    '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'+grid+xlab+paths+'</svg>'+
+    '<div class="row wrapf" style="gap:16px;padding:10px 16px 4px">'+legend+'</div>'+
+    '<div class="muted" style="padding:0 16px 14px">'+S.dates[0]+' \u2192 '+S.dates[S.dates.length-1]+
+    ' \u00b7 '+S.dates.length+' recorded points \u00b7 values carried forward between changes</div>';
 }
 
 $("signin").addEventListener("click",signIn);
@@ -1761,6 +2328,27 @@ for(var t=0;t<tabs.length;t++) tabs[t].addEventListener("click",function(){
   for(var k=0;k<tabs.length;k++) tabs[k].classList.remove("on");
   this.classList.add("on"); tab=this.getAttribute("data-tab"); draw(); });
 
+$("newKid").addEventListener("click",function(){ openKid(null); });
+$("closeKid").addEventListener("click",closeKid);
+$("kSave").addEventListener("click",saveKid);
+$("kDel").addEventListener("click",deleteKid);
+$("kidModal").addEventListener("click",function(e){ if(e.target===this) closeKid(); });
+$("kChild").addEventListener("change",function(){
+  $("kNewChild").classList.toggle("hidden", this.value!=="__new"); });
+$("histClear").addEventListener("click",function(){ histSel={}; renderHistory(); });
+var hmc=document.querySelectorAll("[data-hm]");
+for(var hm=0;hm<hmc.length;hm++) hmc[hm].addEventListener("click",function(){
+  for(var k=0;k<hmc.length;k++) hmc[k].classList.remove("on");
+  this.classList.add("on"); histMode=this.getAttribute("data-hm"); renderHistory(); });
+var hrc=document.querySelectorAll("[data-hr]");
+for(var hr=0;hr<hrc.length;hr++) hrc[hr].addEventListener("click",function(){
+  for(var k=0;k<hrc.length;k++) hrc[k].classList.remove("on");
+  this.classList.add("on"); histRange=+this.getAttribute("data-hr"); renderHistory(); });
+$("newPolicy").addEventListener("click",function(){ openPolicy(null); });
+$("closePolicy").addEventListener("click",closePolicy);
+$("pSave").addEventListener("click",savePolicy);
+$("pDel").addEventListener("click",deletePolicy);
+$("policyModal").addEventListener("click",function(e){ if(e.target===this) closePolicy(); });
 $("expSQL").addEventListener("click",exportSQL);
 $("expMD").addEventListener("click",exportSummaryMD);
 $("expEnv").addEventListener("click",exportEnvelopeCSV);
