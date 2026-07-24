@@ -309,7 +309,7 @@
       <div class="label">Policy name</div>
       <input id="pName" class="field" placeholder="optional — e.g. Indexed Whole Life">
       <div class="row" style="gap:10px">
-        <div style="flex:1"><div class="label">Insured</div><select id="pInsured" class="field"></select></div>
+        <div style="flex:1"><div class="label">Insured</div><select id="pInsured" class="field"></select><input id="pNewInsured" class="field hidden" placeholder="Name"></div>
         <div style="flex:1"><div class="label">Type</div><select id="pType" class="field"></select></div>
       </div>
       <div class="row" style="gap:10px">
@@ -1669,7 +1669,7 @@ var DDL = [
 "create table insurance_policies (",
 "  id uuid primary key default gen_random_uuid(),",
 "  insurer text not null, policy_name text,",
-"  insured text check (insured in ('Jared','Kayla','Both','Other')) default 'Jared',",
+"  insured text default 'Jared',",
 "  policy_type text check (policy_type in ('term','whole','universal','group_term','other')) default 'whole',",
 "  last_four text, face_value numeric(14,2), cash_value numeric(14,2),",
 "  surrender_value numeric(14,2), premium numeric(12,2), premium_frequency text,",
@@ -1931,10 +1931,14 @@ function renderInsurance(){
     if(!groups[k]) groups[k]=[];
     groups[k].push(p);
   });
-  var order=["Jared","Kayla","Both","Other"];
+  var order=["Jared","Kayla","Both"];
+  var kidNames={}; kids.forEach(function(k){ kidNames[k.child]=1; });
   var keys=Object.keys(groups).sort(function(a,b){
     var ia=order.indexOf(a), ib=order.indexOf(b);
-    return (ia<0?9:ia)-(ib<0?9:ib);
+    var ra = ia>=0 ? ia : (a==="Other" ? 99 : (kidNames[a] ? 10 : 50));
+    var rb = ib>=0 ? ib : (b==="Other" ? 99 : (kidNames[b] ? 10 : 50));
+    if(ra!==rb) return ra-rb;
+    return a.localeCompare(b);
   });
   $("insBody").innerHTML = keys.length ? keys.map(function(k){
     return '<section class="panel" style="margin-bottom:14px">'+
@@ -1989,8 +1993,23 @@ function openPolicy(id){
   $("pDel").classList.toggle("hidden",!editingPolicy);
   $("pInsurer").value=p.insurer||"";
   $("pName").value=p.policy_name||"";
-  $("pInsured").innerHTML=["Jared","Kayla","Both","Other"].map(function(o){
-    return '<option'+(p.insured===o?" selected":"")+'>'+o+'</option>'; }).join("");
+  var who={Jared:1,Kayla:1,Both:1,Other:1};
+  policies.forEach(function(x){ if(x.insured) who[x.insured]=1; });
+  kids.forEach(function(x){ if(x.child) who[x.child]=1; });
+  if(p.insured) who[p.insured]=1;
+  var pref=["Jared","Kayla","Both"];
+  var kidN={}; kids.forEach(function(k){ kidN[k.child]=1; });
+  var whoList=Object.keys(who).sort(function(a,b){
+    var ia=pref.indexOf(a), ib=pref.indexOf(b);
+    var ra=ia>=0?ia:(a==="Other"?99:(kidN[a]?10:50));
+    var rb=ib>=0?ib:(b==="Other"?99:(kidN[b]?10:50));
+    if(ra!==rb) return ra-rb;
+    return a.localeCompare(b);
+  });
+  $("pInsured").innerHTML=whoList.map(function(o){
+    return '<option'+(p.insured===o?" selected":"")+'>'+esc(o)+'</option>'; }).join("")+
+    '<option value="__new">+ someone else\u2026</option>';
+  $("pNewInsured").classList.add("hidden"); $("pNewInsured").value="";
   $("pType").innerHTML=POLICY_TYPES.map(function(t){
     return '<option value="'+t+'"'+(p.policy_type===t?" selected":"")+'>'+PT_LABEL[t]+'</option>'; }).join("");
   $("pLast").value=p.last_four||"";
@@ -2016,11 +2035,13 @@ function strOrNull(id){ var v=$(id).value.trim(); return v===""?null:v; }
 
 async function savePolicy(){
   if(!$("pInsurer").value.trim()) return toast("Insurer is required");
+  if($("pInsured").value==="__new" && !$("pNewInsured").value.trim()) return toast("Name who is insured");
   var b=$("pSave"); b.disabled=true; b.textContent="Saving\u2026";
   try{
     var body={
       insurer:$("pInsurer").value.trim(), policy_name:strOrNull("pName"),
-      insured:$("pInsured").value, policy_type:$("pType").value,
+      insured:($("pInsured").value==="__new" ? $("pNewInsured").value.trim() : $("pInsured").value),
+      policy_type:$("pType").value,
       last_four:strOrNull("pLast"), face_value:numOrNull("pFace"),
       cash_value:numOrNull("pCash"), surrender_value:numOrNull("pSurr"),
       premium:numOrNull("pPrem"), premium_frequency:strOrNull("pFreq"),
@@ -2346,6 +2367,8 @@ for(var hr=0;hr<hrc.length;hr++) hrc[hr].addEventListener("click",function(){
   this.classList.add("on"); histRange=+this.getAttribute("data-hr"); renderHistory(); });
 $("newPolicy").addEventListener("click",function(){ openPolicy(null); });
 $("closePolicy").addEventListener("click",closePolicy);
+$("pInsured").addEventListener("change",function(){
+  $("pNewInsured").classList.toggle("hidden", this.value!=="__new"); });
 $("pSave").addEventListener("click",savePolicy);
 $("pDel").addEventListener("click",deletePolicy);
 $("policyModal").addEventListener("click",function(e){ if(e.target===this) closePolicy(); });
