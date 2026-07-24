@@ -124,6 +124,7 @@
     <div class="row wrapf" style="gap:8px">
       <button class="tab on" data-tab="envelopes">Envelopes</button>
       <button class="tab" data-tab="txns">Transactions</button>
+      <button class="tab" data-tab="notes">Notes</button>
       <button class="tab" data-tab="manage">Manage</button>
       <button id="refresh" class="btn">Refresh</button>
       <button id="signout" class="btn" style="color:var(--ink-soft)">Sign out</button>
@@ -261,6 +262,42 @@
     </div>
   </div>
 
+
+  <!-- NOTES VIEW -->
+  <div id="viewNotes" class="hidden">
+    <div class="card" style="padding:18px 20px;margin-bottom:14px">
+      <div class="label">New note</div>
+      <textarea id="nBody" class="field" rows="3" placeholder="e.g. Fronted $62 for a board lunch at Whataburger &mdash; D. is paying me back via Zelle. Took about a week to settle."
+        style="resize:vertical;font-size:15px;line-height:1.5"></textarea>
+      <div class="row wrapf" style="gap:10px;align-items:flex-end">
+        <div style="flex:1;min-width:130px"><div class="label">Topic</div>
+          <select id="nTopic" class="field" style="margin:0"></select></div>
+        <div style="flex:2;min-width:200px"><div class="label">Envelope (optional)</div>
+          <select id="nEnv" class="field" style="margin:0"></select></div>
+        <button id="nAdd" class="btn" style="background:var(--teal);color:#fff;border-color:var(--teal);padding:11px 20px">Save note</button>
+      </div>
+    </div>
+    <section class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Notes</span>
+        <span class="muted" id="nCount"></span>
+      </div>
+      <div class="row wrapf" style="gap:6px;padding:11px 16px;background:var(--paper)">
+        <button class="chip on" data-nf="open">Open</button>
+        <button class="chip" data-nf="claim">Claims</button>
+        <button class="chip" data-nf="idea">Ideas</button>
+        <button class="chip" data-nf="question">Questions</button>
+        <button class="chip" data-nf="todo">To-do</button>
+        <button class="chip" data-nf="all">All</button>
+      </div>
+      <div id="noteList"></div>
+    </section>
+    <p class="muted" style="margin-top:20px;line-height:1.6">
+      Capture claim situations as they happen &mdash; who owed whom, how it started, how it settled,
+      how long it stayed open. A dozen real examples make the right feature obvious.
+    </p>
+  </div>
+
   <!-- MANAGE VIEW -->
   <div id="viewManage" class="hidden">
     <div class="row wrapf" style="gap:6px;margin-bottom:14px">
@@ -309,7 +346,7 @@ function fmt(n){ return (n||0).toLocaleString("en-US",{style:"currency",currency
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(m){
   return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]; }); }
 
-var token=null, raw=[], accts=[], txns=[], rules=[], allocs=[], openSet={}, view="all", tab="envelopes", mtab="accounts", editing=false;
+var token=null, raw=[], accts=[], txns=[], rules=[], notes=[], allocs=[], openSet={}, view="all", tab="envelopes", mtab="accounts", editing=false;
 var splitRows=[];
 
 function saveToken(t){ token=t; try{ localStorage.setItem("ledger_token",t); }catch(e){} }
@@ -360,6 +397,9 @@ async function load(){
     var r4=await fetch(SUPABASE_URL+"/rest/v1/merchant_rules?select=id,pattern,account_id,envelope_id,always_ask",{headers:headers()});
     var d4=await r4.json();
     rules = r4.ok ? d4 : [];
+    var r5=await fetch(SUPABASE_URL+"/rest/v1/notes?select=*&order=created_at.desc",{headers:headers()});
+    var d5=await r5.json();
+    notes = r5.ok ? d5 : [];
     draw();
   }catch(e){
     var el=$("loadErr");
@@ -530,8 +570,10 @@ function draw(){
   $("viewEnvelopes").classList.add("hidden");
   $("viewManage").classList.add("hidden");
   $("viewTxns").classList.add("hidden");
+  $("viewNotes").classList.add("hidden");
   if(tab==="envelopes"){ $("viewEnvelopes").classList.remove("hidden"); renderEnvelopes(); wireEnv(); }
   else if(tab==="txns"){ $("viewTxns").classList.remove("hidden"); renderTxns(); }
+  else if(tab==="notes"){ $("viewNotes").classList.remove("hidden"); renderNotes(); }
   else { $("viewManage").classList.remove("hidden"); renderManage(); }
 }
 
@@ -992,6 +1034,87 @@ async function runImport(){
   finally{ b.disabled=false; b.textContent="Import selected"; }
 }
 
+
+/* ================= NOTES ================= */
+var TOPICS=["claim","idea","question","todo","other"];
+var TOPIC_COLOR={claim:"var(--rust)",idea:"var(--teal)",question:"var(--gold)",todo:"var(--slate)",other:"var(--ink-soft)"};
+var TOPIC_BG={claim:"var(--rust-soft)",idea:"var(--teal-soft)",question:"var(--gold-soft)",todo:"var(--slate-soft)",other:"var(--paper)"};
+var noteFilter="open";
+
+function renderNotes(){
+  var envOpts=raw.slice().sort(function(a,b){ return (a.name||"").localeCompare(b.name||""); });
+  if($("nEnv").innerHTML===""){
+    $("nEnv").innerHTML='<option value="">\u2014 not linked to an envelope \u2014</option>'+
+      envOpts.map(function(e){ return '<option value="'+esc(e.id)+'">'+esc(e.name)+'</option>'; }).join("");
+    $("nTopic").innerHTML=TOPICS.map(function(t){
+      return '<option value="'+t+'">'+t+'</option>'; }).join("");
+  }
+  var open=notes.filter(function(n){ return !n.resolved; }).length;
+  $("nCount").textContent=open+" open \u00b7 "+notes.length+" total";
+
+  var list=notes.filter(function(n){
+    if(noteFilter==="open") return !n.resolved;
+    if(noteFilter==="all") return true;
+    return n.topic===noteFilter;
+  });
+
+  $("noteList").innerHTML = list.length ? list.map(function(n){
+    var env=null;
+    for(var i=0;i<raw.length;i++) if(raw[i].id===n.envelope_id) env=raw[i].name;
+    var d=(n.created_at||"").slice(0,10);
+    return '<div style="padding:12px 16px;border-top:1px solid var(--paper);'+(n.resolved?"opacity:.5":"")+'">'+
+      '<div class="row between wrapf" style="gap:8px;margin-bottom:5px">'+
+        '<span class="row wrapf" style="gap:7px">'+
+          '<span class="tag" style="color:'+(TOPIC_COLOR[n.topic]||"var(--ink-soft)")+';background:'+(TOPIC_BG[n.topic]||"var(--paper)")+'">'+esc(n.topic||"other")+'</span>'+
+          (env?'<span class="muted">'+esc(env)+'</span>':'')+
+          '<span class="muted">'+esc(d)+'</span>'+
+        '</span>'+
+        '<span class="row" style="gap:6px">'+
+          '<button class="btn nRes" data-id="'+esc(n.id)+'" data-r="'+(n.resolved?0:1)+'" style="padding:3px 9px;font-size:11px">'+(n.resolved?"Reopen":"Resolve")+'</button>'+
+          '<button class="btn nDel" data-id="'+esc(n.id)+'" style="padding:3px 9px;font-size:11px;color:var(--rust)">Delete</button>'+
+        '</span>'+
+      '</div>'+
+      '<div style="font-size:13.5px;line-height:1.55;white-space:pre-wrap">'+esc(n.body)+'</div>'+
+    '</div>';
+  }).join("") : '<div class="muted" style="padding:16px">Nothing here yet. Jot down claim situations as they happen &mdash; who owed whom, how it started, how it got settled.</div>';
+
+  var rb=document.querySelectorAll(".nRes");
+  for(var i=0;i<rb.length;i++) rb[i].addEventListener("click",async function(){
+    var id=this.getAttribute("data-id"), r=this.getAttribute("data-r")==="1";
+    await patch("notes",id,{resolved:r},true);
+    for(var k=0;k<notes.length;k++) if(notes[k].id===id) notes[k].resolved=r;
+    draw();
+  });
+  var db=document.querySelectorAll(".nDel");
+  for(var j=0;j<db.length;j++) db[j].addEventListener("click",async function(){
+    if(!confirm("Delete this note?")) return;
+    var id=this.getAttribute("data-id");
+    await fetch(SUPABASE_URL+"/rest/v1/notes?id=eq."+id,{method:"DELETE",headers:headers({Prefer:"return=minimal"})});
+    notes=notes.filter(function(n){ return n.id!==id; });
+    toast("Deleted"); draw();
+  });
+}
+
+async function addNote(){
+  var body=$("nBody").value.trim();
+  if(!body) return toast("Write something first");
+  var b=$("nAdd"); b.disabled=true; b.textContent="Saving\u2026";
+  try{
+    var payload={body:body,topic:$("nTopic").value,resolved:false};
+    var ev=$("nEnv").value; if(ev) payload.envelope_id=ev;
+    var r=await fetch(SUPABASE_URL+"/rest/v1/notes",{
+      method:"POST",headers:headers({Prefer:"return=representation"}),
+      body:JSON.stringify(payload)});
+    var d=await r.json();
+    if(!r.ok) throw new Error(d.message||"Save failed");
+    notes.unshift(d[0]);
+    $("nBody").value=""; $("nEnv").value="";
+    toast("Note saved");
+    draw();
+  }catch(e){ toast(e.message); }
+  finally{ b.disabled=false; b.textContent="Save note"; }
+}
+
 $("signin").addEventListener("click",signIn);
 $("refresh").addEventListener("click",load);
 $("signout").addEventListener("click",signOut);
@@ -1013,6 +1136,11 @@ for(var t=0;t<tabs.length;t++) tabs[t].addEventListener("click",function(){
   for(var k=0;k<tabs.length;k++) tabs[k].classList.remove("on");
   this.classList.add("on"); tab=this.getAttribute("data-tab"); draw(); });
 
+$("nAdd").addEventListener("click",addNote);
+var nfc=document.querySelectorAll("[data-nf]");
+for(var nf=0;nf<nfc.length;nf++) nfc[nf].addEventListener("click",function(){
+  for(var k=0;k<nfc.length;k++) nfc[k].classList.remove("on");
+  this.classList.add("on"); noteFilter=this.getAttribute("data-nf"); renderNotes(); });
 $("addBtn").addEventListener("click",openModal);
 $("importBtn").addEventListener("click",openImport);
 $("closeImport").addEventListener("click",closeImport);
