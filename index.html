@@ -85,7 +85,7 @@
   /* manage screen */
   .mrow{display:grid;grid-template-columns:2fr 78px 96px 118px 62px;gap:8px;align-items:center;
     padding:7px 14px;border-top:1px solid var(--paper)}
-  .mrow.env-cols{grid-template-columns:1.6fr 92px 100px 1fr 1.3fr}
+  .mrow.env-cols{grid-template-columns:1.5fr 84px 92px 0.9fr 1.1fr 64px}
   .mhead{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-soft);
     font-weight:700;background:var(--paper)}
   .mi{width:100%;font-size:12.5px;padding:5px 7px;border:1px solid transparent;border-radius:6px;
@@ -448,6 +448,49 @@
   </div>
 
 
+
+
+  <!-- ACCOUNT MENU MODAL -->
+  <div id="acctMenu" class="hidden" style="position:fixed;inset:0;background:rgba(18,35,46,.45);display:flex;align-items:flex-start;justify-content:center;padding:18px;overflow-y:auto;z-index:60">
+    <div class="card" style="width:100%;max-width:420px;padding:22px;margin-top:60px">
+      <div class="row between" style="margin-bottom:14px">
+        <span id="amTitle" style="font-size:17px;font-weight:800">Account</span>
+        <button id="closeAcctMenu" class="btn" style="padding:4px 10px">&times;</button>
+      </div>
+      <div id="amInfo" class="muted" style="line-height:1.6;margin-bottom:16px"></div>
+      <button id="amArchive" class="btn" style="width:100%;justify-content:center;padding:11px;margin-bottom:10px">Archive &mdash; hide it, keep all history</button>
+      <button id="amDelete" class="btn" style="width:100%;justify-content:center;padding:11px;color:var(--rust)">Delete permanently</button>
+      <p id="amDeleteWhy" class="muted" style="margin-top:8px;line-height:1.5"></p>
+    </div>
+  </div>
+
+  <!-- LINK ACCOUNT MODAL -->
+  <div id="linkModal" class="hidden" style="position:fixed;inset:0;background:rgba(18,35,46,.45);display:flex;align-items:flex-start;justify-content:center;padding:18px;overflow-y:auto;z-index:60">
+    <div class="card" style="width:100%;max-width:420px;padding:22px;margin-top:50px">
+      <div class="row between" style="margin-bottom:14px">
+        <span id="lkTitle" style="font-size:17px;font-weight:800">Link an account</span>
+        <button id="closeLink" class="btn" style="padding:4px 10px">&times;</button>
+      </div>
+      <p class="muted" style="margin:0 0 14px;line-height:1.55">
+        Put some of this envelope&rsquo;s money into an account. Use a fixed dollar amount, or a
+        percentage of the account&rsquo;s balance for market accounts.
+      </p>
+      <div class="label">Account</div>
+      <select id="lkAcct" class="field"></select>
+      <div class="row" style="gap:10px;align-items:flex-end">
+        <div style="flex:1">
+          <div class="label">Basis</div>
+          <select id="lkBasis" class="field"><option value="amount">Fixed $</option><option value="percent">% of account</option></select>
+        </div>
+        <div style="flex:1">
+          <div class="label" id="lkValLabel">Amount</div>
+          <input id="lkVal" class="field" type="number" step="0.01" placeholder="0.00">
+        </div>
+      </div>
+      <button id="lkSave" class="primary">Link</button>
+    </div>
+  </div>
+
   <!-- ADD ACCOUNT / ENVELOPE MODAL -->
   <div id="addModal" class="hidden" style="position:fixed;inset:0;background:rgba(18,35,46,.45);display:flex;align-items:flex-start;justify-content:center;padding:18px;overflow-y:auto;z-index:60">
     <div class="card" style="width:100%;max-width:470px;padding:22px;margin-top:36px">
@@ -557,6 +600,7 @@
         <button class="chip" data-mtab="envelopes">Envelopes</button>
       </div>
       <div class="row wrapf" style="gap:8px">
+        <label class="row muted" style="gap:6px;font-size:12px"><input type="checkbox" id="showArch"> show archived</label>
         <button id="newAcct" class="btn">+ Account</button>
         <button id="newEnv" class="btn">+ Envelope</button>
       </div>
@@ -861,7 +905,7 @@ function renderManage(){
   var body=$("manageBody");
   if(mtab==="accounts"){
     var byInst={};
-    accts.forEach(function(a){
+    accts.filter(function(a){ return showArchived || a.active!==false; }).forEach(function(a){
       var n=(a.institutions&&a.institutions.name)||"Other";
       if(!byInst[n]) byInst[n]=[]; byInst[n].push(a);
     });
@@ -872,7 +916,7 @@ function renderManage(){
         '<span class="dot" style="background:'+esc(color)+'"></span>'+
         '<span class="panel-title">'+esc(inst)+'</span></span>'+
         '<span class="muted">'+byInst[inst].length+' accounts</span></div>'+
-        '<div class="mrow mhead"><span>Name</span><span>Last 4</span><span>Owner</span><span>Kind</span><span>Locked</span></div>'+
+        '<div class="mrow mhead"><span>Name</span><span>Last 4</span><span>Owner</span><span>Kind</span><span>Locked</span><span></span></div>'+
         byInst[inst].map(function(a){
           return '<div class="mrow">'+
             '<input class="mi" value="'+esc(a.name)+'" data-t="accounts" data-id="'+esc(a.id)+'" data-f="name">'+
@@ -880,6 +924,9 @@ function renderManage(){
             sel(a.owner||"Joint",OWNERS,"mi",'data-t="accounts" data-id="'+esc(a.id)+'" data-f="owner"')+
             sel(a.kind||"savings",KINDS,"mi",'data-t="accounts" data-id="'+esc(a.id)+'" data-f="kind"')+
             '<input type="checkbox" '+(a.is_locked?"checked":"")+' data-t="accounts" data-id="'+esc(a.id)+'" data-f="is_locked" style="justify-self:center">'+
+            (a.active===false
+              ? '<button class="btn acctRestore" data-id="'+esc(a.id)+'" style="padding:3px 8px;font-size:10.5px">Restore</button>'
+              : '<button class="btn acctArch" data-id="'+esc(a.id)+'" style="padding:3px 8px;font-size:10.5px">\u22ef</button>')+
           '</div>';
         }).join("")+'</section>';
     }).join("");
@@ -891,7 +938,7 @@ function renderManage(){
     body.innerHTML='<section class="panel">'+
       '<div class="panel-head"><span class="panel-title">Envelopes</span>'+
       '<span class="muted">'+sorted.length+' total</span></div>'+
-      '<div class="mrow env-cols mhead"><span>Name</span><span>Owner</span><span>Type</span><span>Category</span><span>Parent</span></div>'+
+      '<div class="mrow env-cols mhead"><span>Name</span><span>Owner</span><span>Type</span><span>Category</span><span>Parent</span><span>Link</span></div>'+
       sorted.map(function(e){
         return '<div class="mrow env-cols">'+
           '<input class="mi" value="'+esc(e.name)+'" data-t="envelopes" data-id="'+esc(e.id)+'" data-f="name">'+
@@ -899,6 +946,7 @@ function renderManage(){
           sel(e.type||"flow",TYPES,"mi",'data-t="envelopes" data-id="'+esc(e.id)+'" data-f="type"')+
           '<input class="mi" list="catlist" value="'+esc(e.category||"")+'" placeholder="uncategorized" data-t="envelopes" data-id="'+esc(e.id)+'" data-f="category">'+
           parentSel(e)+
+          '<button class="btn envLink" data-id="'+esc(e.id)+'" style="padding:4px 8px;font-size:11px">+ acct</button>'+
         '</div>';
       }).join("")+'</section>';
   }
@@ -951,6 +999,16 @@ function wireEnv(){
 }
 
 function wireManage(){
+  var ar=document.querySelectorAll(".acctArch");
+  for(var z=0;z<ar.length;z++) ar[z].addEventListener("click",function(){ openAcctMenu(this.getAttribute("data-id")); });
+  var rs=document.querySelectorAll(".acctRestore");
+  for(var z2=0;z2<rs.length;z2++) rs[z2].addEventListener("click",async function(){
+    await patch("accounts",this.getAttribute("data-id"),{active:true},true);
+    for(var k=0;k<accts.length;k++) if(accts[k].id===this.getAttribute("data-id")) accts[k].active=true;
+    toast("Restored"); draw(); });
+  var lb=document.querySelectorAll(".envLink");
+  for(var q=0;q<lb.length;q++) lb[q].addEventListener("click",function(){
+    openLink(this.getAttribute("data-id")); });
   var els=document.querySelectorAll("[data-f]");
   for(var i=0;i<els.length;i++){
     var el=els[i];
@@ -1463,6 +1521,94 @@ async function addNote(){
 }
 
 
+
+
+/* ---- archive / delete account ---- */
+var menuAcctId=null;
+async function openAcctMenu(id){
+  menuAcctId=id;
+  var a=null; for(var i=0;i<accts.length;i++) if(accts[i].id===id) a=accts[i];
+  if(!a) return;
+  $("amTitle").textContent=a.name;
+  $("acctMenu").classList.remove("hidden");
+  $("amInfo").textContent="Checking what's attached\u2026";
+  $("amDelete").disabled=true; $("amDeleteWhy").textContent="";
+  // count dependents
+  var refs=[];
+  try{
+    var h=await fetch(SUPABASE_URL+"/rest/v1/holdings?account_id=eq."+id+"&select=id",{headers:headers()});
+    var hd=await h.json(); if(hd.length) refs.push(hd.length+" holding"+(hd.length>1?"s":""));
+    var t=await fetch(SUPABASE_URL+"/rest/v1/transactions?account_id=eq."+id+"&select=id&limit=1",{headers:headers()});
+    var td=await t.json(); if(td.length) refs.push("transactions");
+  }catch(e){}
+  if(refs.length){
+    $("amInfo").innerHTML="This account has <b>"+refs.join(", ")+"</b> attached.";
+    $("amDelete").disabled=true;
+    $("amDeleteWhy").textContent="Delete is disabled because removing it would destroy that history. Archive instead \u2014 it hides the account but keeps everything intact.";
+  }else{
+    $("amInfo").innerHTML="Nothing is attached to this account.";
+    $("amDelete").disabled=false;
+    $("amDeleteWhy").textContent="Safe to delete permanently, since nothing references it.";
+  }
+}
+function closeAcctMenu(){ $("acctMenu").classList.add("hidden"); }
+
+async function archiveAcct(){
+  await patch("accounts",menuAcctId,{active:false},true);
+  for(var k=0;k<accts.length;k++) if(accts[k].id===menuAcctId) accts[k].active=false;
+  toast("Archived"); closeAcctMenu(); draw();
+}
+async function deleteAcct(){
+  if(!confirm("Permanently delete this account? This cannot be undone.")) return;
+  var r=await fetch(SUPABASE_URL+"/rest/v1/accounts?id=eq."+menuAcctId,
+    {method:"DELETE",headers:headers({Prefer:"return=minimal"})});
+  if(!r.ok){ toast("Delete failed \u2014 archive instead"); return; }
+  accts=accts.filter(function(a){ return a.id!==menuAcctId; });
+  toast("Deleted"); closeAcctMenu(); draw();
+}
+
+/* ---- link envelope <-> account ---- */
+var linkEnvId=null;
+function openLink(envId){
+  linkEnvId=envId;
+  var name="envelope";
+  for(var i=0;i<raw.length;i++) if(raw[i].id===envId) name=raw[i].name;
+  $("lkTitle").textContent="Link account \u2192 "+name;
+  var byInst={};
+  accts.forEach(function(a){ var n=(a.institutions&&a.institutions.name)||"Other"; (byInst[n]=byInst[n]||[]).push(a); });
+  $("lkAcct").innerHTML=Object.keys(byInst).sort().map(function(inst){
+    return '<optgroup label="'+esc(inst)+'">'+byInst[inst].map(function(a){
+      return '<option value="'+esc(a.id)+'">'+esc(a.name)+'</option>'; }).join("")+'</optgroup>';
+  }).join("");
+  $("lkBasis").value="amount"; $("lkVal").value=""; $("lkValLabel").textContent="Amount";
+  $("linkModal").classList.remove("hidden");
+}
+function closeLink(){ $("linkModal").classList.add("hidden"); }
+
+async function saveLink(){
+  var v=parseFloat($("lkVal").value);
+  if(isNaN(v)) return toast("Enter a value");
+  var pct=$("lkBasis").value==="percent";
+  if(pct && (v<0||v>100)) return toast("Percent must be 0\u2013100");
+  var b=$("lkSave"); b.disabled=true; b.textContent="Linking\u2026";
+  try{
+    var body={envelope_id:linkEnvId, account_id:$("lkAcct").value};
+    if(pct) body.percent_of_account=v; else body.amount=v;
+    var r=await fetch(SUPABASE_URL+"/rest/v1/holdings",{
+      method:"POST",headers:headers({Prefer:"return=minimal"}),body:JSON.stringify(body)});
+    if(!r.ok){
+      var e=await r.json();
+      throw new Error((e.message||"Link failed").indexOf("duplicate")>=0
+        ? "That envelope is already linked to this account \u2014 edit the amount on the Envelopes tab instead."
+        : (e.message||"Link failed"));
+    }
+    toast("Linked");
+    closeLink();
+    await load();
+  }catch(e){ toast(e.message); }
+  finally{ b.disabled=false; b.textContent="Link"; }
+}
+
 /* ================= ADD ACCOUNT / ENVELOPE ================= */
 function openAdd(kind){
   $("addTitle").textContent = kind==="account" ? "Add account" : "Add envelope";
@@ -1873,7 +2019,7 @@ async function exportSummaryMD(){
     L.push("## Accounts by institution");
     L.push("");
     var byInst={};
-    accts.forEach(function(a){
+    accts.filter(function(a){ return showArchived || a.active!==false; }).forEach(function(a){
       var n=(a.institutions&&a.institutions.name)||"Other";
       if(!byInst[n]) byInst[n]=[]; byInst[n].push(a);
     });
@@ -2098,6 +2244,7 @@ function byKidOrder(a,b){
   return r!==0 ? r : a.localeCompare(b);
 }
 var editingKid=null;
+var showArchived=false;
 
 function renderKids(){
   var groups={};
@@ -2386,6 +2533,16 @@ $("expMD").addEventListener("click",exportSummaryMD);
 $("expEnv").addEventListener("click",exportEnvelopeCSV);
 $("expTxn").addEventListener("click",exportTxnCSV);
 $("expRaw").addEventListener("click",exportRawCSVs);
+$("closeAcctMenu").addEventListener("click",closeAcctMenu);
+$("amArchive").addEventListener("click",archiveAcct);
+$("amDelete").addEventListener("click",deleteAcct);
+$("acctMenu").addEventListener("click",function(e){ if(e.target===this) closeAcctMenu(); });
+$("showArch").addEventListener("change",function(){ showArchived=this.checked; renderManage(); });
+$("closeLink").addEventListener("click",closeLink);
+$("lkSave").addEventListener("click",saveLink);
+$("linkModal").addEventListener("click",function(e){ if(e.target===this) closeLink(); });
+$("lkBasis").addEventListener("change",function(){
+  $("lkValLabel").textContent=this.value==="percent"?"Percent (0\u2013100)":"Amount"; });
 $("newAcct").addEventListener("click",function(){ openAdd("account"); });
 $("newEnv").addEventListener("click",function(){ openAdd("envelope"); });
 $("closeAdd").addEventListener("click",closeAdd);
