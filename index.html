@@ -727,6 +727,29 @@ async function patch(table, id, body, quiet){
   }catch(e){ toast(e.message); return false; }
 }
 
+
+async function savePercent(hid, value){
+  try{
+    var r=await fetch(SUPABASE_URL+"/rest/v1/holdings?id=eq."+hid,{
+      method:"PATCH",headers:headers({Prefer:"return=minimal"}),
+      body:JSON.stringify({percent_of_account:value})});
+    if(!r.ok) throw new Error("Save failed");
+    // find which account this holding is on, re-check its total
+    var aid=null;
+    raw.forEach(function(e){ (e.holdings||[]).forEach(function(h){
+      if(h.id===hid && h.accounts) aid=h.accounts.id; }); });
+    await load();
+    if(aid){
+      var tot=pctTotalsByAccount()[aid]||0;
+      if(Math.abs(tot-100)>0.01){
+        toast("Saved \u2014 heads up: this account now totals "+tot.toFixed(0)+"%, not 100%");
+        return;
+      }
+    }
+    toast("Saved");
+  }catch(e){ toast(e.message); draw(); }
+}
+
 async function saveAmount(hid, aid, isPct, value){
   var today=new Date().toISOString().slice(0,10);
   if(isPct){
@@ -759,6 +782,20 @@ function compute(list){
     o.own=total;o.total=total;o.liquid=liquid;o.locked=locked;o.hasPct=hasPct;o.places=places;
     return o;
   });
+}
+
+/* sum of percentages assigned to each account across all envelopes */
+function pctTotalsByAccount(){
+  var m={};
+  raw.forEach(function(e){
+    (e.holdings||[]).forEach(function(h){
+      if(h.percent_of_account==null) return;
+      var aid=h.accounts&&h.accounts.id;
+      if(!aid) return;
+      m[aid]=(m[aid]||0)+Number(h.percent_of_account);
+    });
+  });
+  return m;
 }
 
 /* unsettled charges per envelope */
@@ -832,7 +869,7 @@ function envHtml(e, depth){
         '<span class="dot" style="background:'+esc(p.color)+'"></span>'+
         '<span class="place-name">'+esc(p.inst)+' \u00b7 '+esc(p.acct)+'</span>'+
         (p.locked?'<span class="tag" style="color:var(--slate);background:var(--slate-soft)">locked</span>':'')+
-        (p.isPct?'<span class="tag" style="color:var(--gold);background:var(--gold-soft)">'+esc(p.pct)+'%</span>':'')+
+        (p.isPct?'<span class="tag pctEdit" data-hid="'+esc(p.hid)+'" data-pct="'+esc(p.pct)+'" style="color:var(--gold);background:var(--gold-soft);cursor:pointer" title="Click to edit this percentage">'+esc(p.pct)+'% \u270e</span>':'')+
         '</span><span class="amt num" data-hid="'+esc(p.hid)+'" data-aid="'+esc(p.aid)+'" data-pct="'+(p.isPct?1:0)+
         '" data-val="'+(p.isPct?(p.bal==null?"":p.bal):p.value)+'" style="color:'+(p.missing?"var(--rust)":"var(--ink)")+'">'+
         (p.missing?"set balance":fmt(p.value))+'</span></div>';
@@ -976,6 +1013,23 @@ function wireEnv(){
   var heads=document.querySelectorAll(".env-head");
   for(var i=0;i<heads.length;i++) heads[i].addEventListener("click",function(){
     var id=this.getAttribute("data-env"); openSet[id]=!openSet[id]; draw();
+  });
+  var pe=document.querySelectorAll(".pctEdit");
+  for(var pi=0;pi<pe.length;pi++) pe[pi].addEventListener("click",function(ev){
+    ev.stopPropagation();
+    if(editing) return; editing=true;
+    var el=this, hid=el.getAttribute("data-hid"), cur=el.getAttribute("data-pct");
+    var inp=document.createElement("input");
+    inp.type="number"; inp.step="0.01"; inp.min="0"; inp.max="100"; inp.className="amt-in";
+    inp.style.width="66px"; inp.value=cur; inp.title="Percentage of this account";
+    el.parentNode.replaceChild(inp,el); inp.focus(); inp.select();
+    var done=function(commit){
+      if(!editing) return; editing=false;
+      var v=parseFloat(inp.value);
+      if(commit && !isNaN(v) && v>=0 && v<=100) savePercent(hid,v); else draw();
+    };
+    inp.addEventListener("keydown",function(e){ if(e.key==="Enter") done(true); if(e.key==="Escape") done(false); });
+    inp.addEventListener("blur",function(){ done(true); });
   });
   var amts=document.querySelectorAll(".amt");
   for(var j=0;j<amts.length;j++) amts[j].addEventListener("click",function(ev){
