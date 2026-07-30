@@ -129,6 +129,7 @@
       <button class="tab" data-tab="insurance">Insurance</button>
       <button class="tab" data-tab="notes">Notes</button>
       <button class="tab" data-tab="manage">Manage</button>
+      <button class="tab" data-tab="documents">Documents</button>
       <button class="tab" data-tab="export">Export</button>
       <button id="refresh" class="btn">Refresh</button>
       <button id="signout" class="btn" style="color:var(--ink-soft)">Sign out</button>
@@ -542,6 +543,35 @@
   </div>
 
 
+
+  <!-- DOCUMENTS VIEW -->
+  <div id="viewDocuments" class="hidden">
+    <div class="card" style="padding:14px 18px;margin-bottom:14px;font-size:13px;line-height:1.6;color:var(--ink-soft)">
+      Reference documents &mdash; viewable and printable here, kept separate from the app&rsquo;s live
+      envelope data on purpose (these hold a <i>plan</i>, not current balances). Use <b>Print / PDF</b>
+      for a clean copy, or <b>Edit data</b> to update the figures behind a document.
+    </div>
+    <div id="docsBody"></div>
+  </div>
+
+  <!-- DOC DATA MODAL -->
+  <div id="docDataModal" class="hidden" style="position:fixed;inset:0;background:rgba(18,35,46,.45);display:flex;align-items:flex-start;justify-content:center;padding:18px;overflow-y:auto;z-index:60">
+    <div class="card" style="width:100%;max-width:640px;padding:22px;margin-top:24px">
+      <div class="row between" style="margin-bottom:12px">
+        <span id="ddTitle" style="font-size:17px;font-weight:800">Data</span>
+        <button id="closeDocData" class="btn" style="padding:4px 10px">&times;</button>
+      </div>
+      <p class="muted" style="margin:0 0 12px;line-height:1.55">
+        This is the JSON behind the document. Edit values carefully &mdash; keep the structure intact.
+        Saving updates the stored data; the printed layout uses these figures.
+      </p>
+      <textarea id="ddText" class="field" rows="18" spellcheck="false"
+        style="font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.5;resize:vertical;white-space:pre"></textarea>
+      <div id="ddWarn" style="color:var(--rust);font-size:12.5px;margin-bottom:10px;min-height:16px"></div>
+      <button id="ddSave" class="primary">Save data</button>
+    </div>
+  </div>
+
   <!-- EXPORT VIEW -->
   <div id="viewExport" class="hidden">
     <div class="grid">
@@ -651,7 +681,7 @@ function fmt(n){ return (n||0).toLocaleString("en-US",{style:"currency",currency
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(m){
   return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]; }); }
 
-var token=null, raw=[], accts=[], txns=[], rules=[], notes=[], policies=[], kids=[], snaps=[], allocs=[], openSet={}, view="all", tab="envelopes", mtab="accounts", editing=false;
+var token=null, raw=[], accts=[], txns=[], rules=[], notes=[], policies=[], kids=[], snaps=[], docs=[], allocs=[], openSet={}, view="all", tab="envelopes", mtab="accounts", editing=false;
 var splitRows=[];
 var balMode="available";
 
@@ -709,6 +739,7 @@ async function load(){
     await loadPolicies();
     await loadKids();
     await loadHistory();
+    await loadDocs();
     draw();
   }catch(e){
     var el=$("loadErr");
@@ -999,6 +1030,7 @@ function draw(){
   $("viewInsurance").classList.add("hidden");
   $("viewKids").classList.add("hidden");
   $("viewHistory").classList.add("hidden");
+  $("viewDocuments").classList.add("hidden");
   if(tab==="envelopes"){ $("viewEnvelopes").classList.remove("hidden"); renderEnvelopes(); wireEnv(); }
   else if(tab==="txns"){ $("viewTxns").classList.remove("hidden"); renderTxns(); }
   else if(tab==="notes"){ $("viewNotes").classList.remove("hidden"); renderNotes(); }
@@ -1006,6 +1038,7 @@ function draw(){
   else if(tab==="insurance"){ $("viewInsurance").classList.remove("hidden"); renderInsurance(); }
   else if(tab==="kids"){ $("viewKids").classList.remove("hidden"); renderKids(); }
   else if(tab==="history"){ $("viewHistory").classList.remove("hidden"); renderHistory(); }
+  else if(tab==="documents"){ $("viewDocuments").classList.remove("hidden"); renderDocs(); }
   else { $("viewManage").classList.remove("hidden"); renderManage(); }
 }
 
@@ -1755,7 +1788,7 @@ async function saveNew(){
 
 
 /* ================= EXPORT / BACKUP ================= */
-var TABLES=["institutions","envelopes","accounts","holdings","transactions","claims","allocations","merchant_rules","snapshots","notes","insurance_policies","kids_accounts"];
+var TABLES=["institutions","envelopes","accounts","holdings","transactions","claims","allocations","merchant_rules","snapshots","notes","insurance_policies","kids_accounts","documents"];
 
 var DDL = [
 "-- ============================================================",
@@ -2268,6 +2301,7 @@ async function savePolicy(){
     await loadPolicies();
     await loadKids();
     await loadHistory();
+    await loadDocs();
     draw();
   }catch(e){ toast(e.message); }
   finally{ b.disabled=false; b.textContent="Save"; }
@@ -2535,6 +2569,105 @@ function drawChart(S, ids){
     ' \u00b7 '+S.dates.length+' recorded points \u00b7 values carried forward between changes</div>';
 }
 
+
+/* ================= DOCUMENTS ================= */
+var curDoc=null;
+
+async function loadDocs(){
+  try{
+    var r=await fetch(SUPABASE_URL+"/rest/v1/documents?select=id,slug,title,page_size,data,updated_at&order=title.asc",{headers:headers()});
+    var d=await r.json();
+    docs = r.ok ? d : [];
+  }catch(e){ docs=[]; }
+}
+
+function renderDocs(){
+  if(!docs.length){
+    $("docsBody").innerHTML='<div class="card" style="padding:24px;font-size:13.5px;line-height:1.7;color:var(--ink-soft)">'+
+      'No documents loaded yet. Run the <code>documents</code> schema query, then open '+
+      '<b>seed-documents.html</b> once to load the Reference Guide and Boring Plan.</div>';
+    return;
+  }
+  $("docsBody").innerHTML=
+    '<div class="row wrapf" style="gap:8px;margin-bottom:14px">'+
+    docs.map(function(d){
+      return '<button class="chip docPick'+(curDoc&&curDoc.id===d.id?" on":"")+'" data-id="'+esc(d.id)+'">'+esc(d.title)+'</button>';
+    }).join("")+'</div>'+
+    '<div id="docStage"></div>';
+  var pk=document.querySelectorAll(".docPick");
+  for(var i=0;i<pk.length;i++) pk[i].addEventListener("click",function(){ openDoc(this.getAttribute("data-id")); });
+  if(!curDoc && docs.length) openDoc(docs[0].id);
+  else if(curDoc) showDoc();
+}
+
+async function openDoc(id){
+  curDoc=null;
+  for(var i=0;i<docs.length;i++) if(docs[i].id===id) curDoc=docs[i];
+  // fetch the heavy html only when opened
+  if(curDoc && !curDoc.html){
+    var r=await fetch(SUPABASE_URL+"/rest/v1/documents?id=eq."+id+"&select=html",{headers:headers()});
+    var d=await r.json();
+    if(r.ok && d[0]) curDoc.html=d[0].html;
+  }
+  renderDocs();
+}
+
+function showDoc(){
+  if(!curDoc) return;
+  var land = (curDoc.page_size||"").indexOf("landscape")>=0;
+  var stage=$("docStage");
+  stage.innerHTML=
+    '<div class="row between wrapf" style="gap:10px;margin-bottom:10px">'+
+      '<span class="muted">Updated '+(curDoc.updated_at?curDoc.updated_at.slice(0,10):"")+'</span>'+
+      '<div class="row wrapf" style="gap:8px">'+
+        '<button id="docData" class="btn">Edit data (JSON)</button>'+
+        '<button id="docPrint" class="btn" style="background:var(--teal);color:#fff;border-color:var(--teal)">Print / PDF</button>'+
+      '</div>'+
+    '</div>'+
+    '<div style="overflow:auto;border:1px solid var(--line);border-radius:12px;background:#fff;padding:12px">'+
+      '<iframe id="docFrame" style="border:0;background:#fff;display:block;margin:0 auto;'+
+        (land?'width:11in;height:8.5in':'width:8.5in;height:11in')+';max-width:100%"></iframe>'+
+    '</div>';
+  var f=$("docFrame");
+  f.srcdoc=curDoc.html||"<p style='font-family:sans-serif;padding:2rem;color:#888'>Loading…</p>";
+  $("docPrint").addEventListener("click",printDoc);
+  $("docData").addEventListener("click",openDocData);
+}
+
+function printDoc(){
+  var f=$("docFrame");
+  if(!f||!f.contentWindow) return;
+  f.contentWindow.focus();
+  f.contentWindow.print();
+}
+
+/* ---- edit the JSON data behind a document ---- */
+function openDocData(){
+  if(!curDoc) return;
+  $("ddTitle").textContent="Data — "+curDoc.title;
+  $("ddText").value=JSON.stringify(curDoc.data||{}, null, 2);
+  $("ddWarn").textContent="";
+  $("docDataModal").classList.remove("hidden");
+}
+function closeDocData(){ $("docDataModal").classList.add("hidden"); }
+
+async function saveDocData(){
+  var parsed;
+  try{ parsed=JSON.parse($("ddText").value); }
+  catch(e){ $("ddWarn").textContent="Not valid JSON: "+e.message; return; }
+  var b=$("ddSave"); b.disabled=true; b.textContent="Saving\u2026";
+  try{
+    var r=await fetch(SUPABASE_URL+"/rest/v1/documents?id=eq."+curDoc.id,{
+      method:"PATCH",headers:headers({Prefer:"return=minimal"}),
+      body:JSON.stringify({data:parsed, updated_at:new Date().toISOString()})});
+    if(!r.ok){ var e=await r.json(); throw new Error(e.message||"Save failed"); }
+    curDoc.data=parsed;
+    toast("Data saved");
+    closeDocData();
+  }catch(e){ $("ddWarn").textContent=e.message; }
+  finally{ b.disabled=false; b.textContent="Save data"; }
+}
+
 $("signin").addEventListener("click",signIn);
 $("refresh").addEventListener("click",load);
 $("signout").addEventListener("click",signOut);
@@ -2584,6 +2717,9 @@ $("pInsured").addEventListener("change",function(){
 $("pSave").addEventListener("click",savePolicy);
 $("pDel").addEventListener("click",deletePolicy);
 $("policyModal").addEventListener("click",function(e){ if(e.target===this) closePolicy(); });
+$("closeDocData").addEventListener("click",closeDocData);
+$("ddSave").addEventListener("click",saveDocData);
+$("docDataModal").addEventListener("click",function(e){ if(e.target===this) closeDocData(); });
 $("expSQL").addEventListener("click",exportSQL);
 $("expMD").addEventListener("click",exportSummaryMD);
 $("expEnv").addEventListener("click",exportEnvelopeCSV);
