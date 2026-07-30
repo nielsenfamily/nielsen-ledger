@@ -1019,6 +1019,7 @@ function wireEnv(){
     ev.stopPropagation();
     if(editing) return; editing=true;
     var el=this, hid=el.getAttribute("data-hid"), cur=el.getAttribute("data-pct");
+    var origP=parseFloat(cur);
     var inp=document.createElement("input");
     inp.type="number"; inp.step="0.01"; inp.min="0"; inp.max="100"; inp.className="amt-in";
     inp.style.width="66px"; inp.value=cur; inp.title="Percentage of this account";
@@ -1026,7 +1027,7 @@ function wireEnv(){
     var done=function(commit){
       if(!editing) return; editing=false;
       var v=parseFloat(inp.value);
-      if(commit && !isNaN(v) && v>=0 && v<=100) savePercent(hid,v); else draw();
+      if(commit && !isNaN(v) && v>=0 && v<=100 && !(Math.abs(v-origP)<0.005)) savePercent(hid,v); else draw();
     };
     inp.addEventListener("keydown",function(e){ if(e.key==="Enter") done(true); if(e.key==="Escape") done(false); });
     inp.addEventListener("blur",function(){ done(true); });
@@ -1038,6 +1039,7 @@ function wireEnv(){
     editing=true;
     var el=this, hid=el.getAttribute("data-hid"), aid=el.getAttribute("data-aid");
     var isPct=el.getAttribute("data-pct")==="1";
+    var orig=parseFloat(el.getAttribute("data-val"));
     var inp=document.createElement("input");
     inp.type="number"; inp.step="0.01"; inp.className="amt-in"; inp.value=el.getAttribute("data-val");
     inp.title=isPct?"Editing the account's full balance":"Editing this holding";
@@ -1045,7 +1047,7 @@ function wireEnv(){
     var done=function(commit){
       if(!editing) return; editing=false;
       var v=parseFloat(inp.value);
-      if(commit && !isNaN(v)) saveAmount(hid,aid,isPct,v); else draw();
+      if(commit && !isNaN(v) && !(Math.abs(v-orig)<0.005)) saveAmount(hid,aid,isPct,v); else draw();
     };
     inp.addEventListener("keydown",function(e){ if(e.key==="Enter") done(true); if(e.key==="Escape") done(false); });
     inp.addEventListener("blur",function(){ done(true); });
