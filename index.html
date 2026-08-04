@@ -644,6 +644,10 @@
 </div>
 
 <div id="toast"></div>
+<div id="undoBar" class="hidden" style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:13.5px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.18);z-index:100;display:flex;gap:14px;align-items:center">
+  <span id="undoMsg"></span>
+  <button id="undoBtn" style="background:var(--gold);color:#fff;border:none;border-radius:7px;padding:6px 12px;font-weight:700;font-size:12.5px;cursor:pointer">Undo import</button>
+</div>
 <datalist id="kidtypes"><option value="Kids Savings"></option><option value="Trump Account"></option>
   <option value="529 Plan"></option><option value="Custodial Brokerage"></option></datalist>
 <datalist id="freqlist"><option value="monthly"></option><option value="quarterly"></option>
@@ -1485,13 +1489,31 @@ function renderImportRows(){
     imp.rows[+this.getAttribute("data-i")].include=this.checked; renderImportRows(); });
 }
 
+var lastImportIds=[];
+
 async function runImport(){
   var todo=imp.rows.filter(function(r){ return r.include; });
   if(!todo.length) return toast("Nothing selected");
-  var missing=todo.filter(function(r){ return !r.envelope && !r.settled; }).length;
-  if(missing && !confirm(missing+" row(s) have no envelope. Import them as uncategorized?")) return;
+
+  // Plain-language confirmation of exactly what will happen — the safety net.
+  var active=todo.filter(function(r){ return !r.settled; });
+  var hist=todo.filter(function(r){ return r.settled; });
+  var owe=0; active.forEach(function(r){ owe+=Number(r.amount||0); });
+  var noEnv=active.filter(function(r){ return !r.envelope; }).length;
+  var acctName="this card";
+  for(var q=0;q<accts.length;q++) if(accts[q].id===imp.acct) acctName=accts[q].name;
+
+  var msg="About to import onto "+acctName+":\n\n";
+  msg+="\u2022 "+active.length+" as UNSETTLED (will show as owed): "+fmt(owe)+"\n";
+  if(hist.length) msg+="\u2022 "+hist.length+" as PAID HISTORY (no effect on balances)\n";
+  if(noEnv) msg+="\u2022 "+noEnv+" of the unsettled have NO envelope yet — you can assign them later\n";
+  msg+="\nThe "+fmt(owe)+" should roughly match this card's current unpaid balance. ";
+  msg+="If it's much higher, cancel and set the \u201calready paid on or before\u201d date.\n\nImport now?";
+  if(!confirm(msg)) return;
+
   var b=$("iRun"); b.disabled=true; b.textContent="Importing\u2026";
   var learned=0, made=0;
+  lastImportIds=[];
   try{
     for(var i=0;i<todo.length;i++){
       var r=todo[i];
@@ -1505,6 +1527,7 @@ async function runImport(){
       var t=await res.json();
       if(!res.ok) continue;
       made++;
+      lastImportIds.push(t[0].id);
       if(r.envelope){
         await fetch(SUPABASE_URL+"/rest/v1/allocations",{
           method:"POST",headers:headers({Prefer:"return=minimal"}),
@@ -1521,11 +1544,39 @@ async function runImport(){
         }
       }
     }
-    toast("Imported "+made+(learned?" \u00b7 learned "+learned+" rule"+(learned===1?"":"s"):""));
     closeImport();
     await load();
+    // offer undo
+    var undo=made+" imported"+(learned?" \u00b7 learned "+learned+" rule"+(learned===1?"":"s"):"");
+    showUndo(undo);
   }catch(e){ toast(e.message); }
   finally{ b.disabled=false; b.textContent="Import selected"; }
+}
+
+function showUndo(msg){
+  var bar=$("undoBar");
+  $("undoMsg").textContent=msg;
+  bar.classList.remove("hidden");
+  clearTimeout(window._undoTimer);
+  window._undoTimer=setTimeout(function(){ bar.classList.add("hidden"); },15000);
+}
+
+async function undoLastImport(){
+  if(!lastImportIds.length){ $("undoBar").classList.add("hidden"); return; }
+  var b=$("undoBtn"); b.disabled=true; b.textContent="Undoing\u2026";
+  try{
+    // delete in chunks; allocations cascade on transaction delete
+    for(var i=0;i<lastImportIds.length;i++){
+      await fetch(SUPABASE_URL+"/rest/v1/transactions?id=eq."+lastImportIds[i],
+        {method:"DELETE",headers:headers({Prefer:"return=minimal"})});
+    }
+    var n=lastImportIds.length;
+    lastImportIds=[];
+    $("undoBar").classList.add("hidden");
+    await load();
+    toast("Removed "+n+" imported transaction"+(n===1?"":"s"));
+  }catch(e){ toast(e.message); }
+  finally{ b.disabled=false; b.textContent="Undo import"; }
 }
 
 
@@ -2758,6 +2809,7 @@ $("iAcct").addEventListener("change",function(){ imp.acct=this.value; if(imp.raw
 $("iFlip").addEventListener("change",function(){ imp.flip=this.checked; buildRows(); });
 $("iCutoff").addEventListener("change",function(){ if(imp.raw) buildRows(); });
 $("iRun").addEventListener("click",runImport);
+$("undoBtn").addEventListener("click",undoLastImport);
 $("importModal").addEventListener("click",function(e){ if(e.target===this) closeImport(); });
 $("closeModal").addEventListener("click",closeModal);
 $("addSplit").addEventListener("click",function(){ splitRows.push({env:"",amt:""}); drawSplits(); });
