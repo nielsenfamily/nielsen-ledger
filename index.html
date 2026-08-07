@@ -2582,20 +2582,39 @@ function drawChart(S, ids){
   if(lo===hi){ lo=lo-1; hi=hi+1; }
   var span=hi-lo; lo-=span*0.1; hi+=span*0.1; if(lo>0 && lo<span) lo=0;
   var n=S.dates.length;
-  var X=function(i){ return padL + (n<2?0:(i/(n-1))*(W-padL-padR)); };
+
+  // x-position by actual date, so gaps reflect real elapsed time
+  var t=S.dates.map(function(d){ return new Date(d+"T00:00:00").getTime(); });
+  var t0=t[0], t1=t[n-1], tspan=(t1-t0)||1;
+  var X=function(i){ return padL + ((t[i]-t0)/tspan)*(W-padL-padR); };
   var Y=function(v){ return padT + (1-(v-lo)/(hi-lo))*(H-padT-padB); };
+
+  // y-axis labels: pick a format precise enough that adjacent ticks differ
+  var yfmt=function(v){
+    var range=hi-lo;
+    if(range>=4000) return "$"+Math.round(v/1000)+"k";
+    if(range>=400)  return "$"+(v/1000).toFixed(1)+"k";
+    return "$"+Math.round(v).toLocaleString();
+  };
 
   var grid="", ticks=4;
   for(var g=0;g<=ticks;g++){
     var v=lo+(hi-lo)*g/ticks, y=Y(v);
     grid+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="#E7E1D5" stroke-width="1"/>'+
       '<text x="'+(padL-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="10.5" fill="#40525C">'+
-      (Math.abs(v)>=1000?"$"+Math.round(v/1000)+"k":"$"+Math.round(v))+'</text>';
+      yfmt(v)+'</text>';
   }
-  var step=Math.max(1,Math.ceil(n/6)), xlab="";
-  for(var i=0;i<n;i+=step){
-    xlab+='<text x="'+X(i)+'" y="'+(H-padB+18)+'" text-anchor="middle" font-size="10.5" fill="#40525C">'+
-      S.dates[i].slice(5)+'</text>';
+  // x labels: first, last, and any interior point far enough from its neighbours
+  var xlab="", lastX=-999;
+  for(var i=0;i<n;i++){
+    var xp=X(i);
+    var isEnd=(i===0||i===n-1);
+    if(isEnd || xp-lastX>70){
+      xlab+='<text x="'+xp.toFixed(1)+'" y="'+(H-padB+18)+'" text-anchor="'+
+        (i===0?"start":(i===n-1?"end":"middle"))+'" font-size="10.5" fill="#40525C">'+
+        S.dates[i].slice(5)+'</text>';
+      lastX=xp;
+    }
   }
   var paths=series.map(function(s){
     var d=s.vals.map(function(v,i){ return (i?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1); }).join(" ");
