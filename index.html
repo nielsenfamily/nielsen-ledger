@@ -415,6 +415,11 @@
 
   <!-- HISTORY VIEW -->
   <div id="viewHistory" class="hidden">
+    <div class="row wrapf" style="gap:6px;margin-bottom:12px">
+      <button class="chip on" data-hs="envelopes">Envelopes</button>
+      <button class="chip" data-hs="insurance">Insurance</button>
+      <button class="chip" data-hs="kids">Kids</button>
+    </div>
     <div class="grid">
       <section class="panel" style="grid-column:1 / -1">
         <div class="panel-head">
@@ -430,7 +435,7 @@
         <div id="chart"></div>
       </section>
       <section class="panel span2">
-        <div class="panel-head"><span class="panel-title">Envelopes to chart</span>
+        <div class="panel-head"><span class="panel-title" id="histPickTitle">Envelopes to chart</span>
           <button id="histClear" class="btn" style="padding:3px 10px;font-size:11.5px">Clear</button></div>
         <div id="histPick" style="padding:10px 12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:2px"></div>
       </section>
@@ -1986,7 +1991,7 @@ async function saveNew(){
 
 
 /* ================= EXPORT / BACKUP ================= */
-var TABLES=["institutions","envelopes","accounts","holdings","transactions","claims","allocations","merchant_rules","snapshots","notes","insurance_policies","kids_accounts","documents"];
+var TABLES=["institutions","envelopes","accounts","holdings","transactions","claims","allocations","merchant_rules","snapshots","notes","insurance_policies","kids_accounts","documents","entity_snapshots"];
 
 var DDL = [
 "-- ============================================================",
@@ -2602,8 +2607,21 @@ async function saveKid(){
     else r=await fetch(SUPABASE_URL+"/rest/v1/kids_accounts",{
       method:"POST",headers:headers({Prefer:"return=minimal"}),body:JSON.stringify(body)});
     if(!r.ok){ var e=await r.json(); throw new Error(e.message||"Save failed"); }
+    var kid = editingKid ? editingKid.id : null;
+    if(!kid){
+      var kq=await fetch(SUPABASE_URL+"/rest/v1/kids_accounts?select=id&child=eq."+encodeURIComponent(child)+"&order=created_at.desc&limit=1",{headers:headers()});
+      var kqd=await kq.json(); if(kq.ok && kqd[0]) kid=kqd[0].id;
+    }
+    if(kid && body.balance!=null){
+      var prevBal = editingKid ? editingKid.balance : null;
+      if(!(editingKid && Number(prevBal)===Number(body.balance))){
+        await fetch(SUPABASE_URL+"/rest/v1/entity_snapshots",{
+          method:"POST",headers:headers({Prefer:"return=minimal"}),
+          body:JSON.stringify({entity_type:"kid",entity_id:kid,amount:body.balance,field:"balance",as_of:new Date().toISOString().slice(0,10)})});
+      }
+    }
     toast(editingKid?"Updated":"Added");
-    closeKid(); await loadKids(); draw();
+    closeKid(); await loadKids(); await loadHistory(); draw();
   }catch(e){ toast(e.message); }
   finally{ b.disabled=false; b.textContent="Save"; }
 }
@@ -2625,7 +2643,8 @@ async function loadKids(){
 }
 
 /* ================= HISTORY ================= */
-var histSel={}, histMode="compare", histRange=365;
+var histSel={}, histMode="compare", histRange=365, histSource="envelopes";
+var esnaps=[];
 var LINE_COLORS=["#0E7C7B","#B8892B","#B4553B","#5A6B78","#157F5B","#6A2C8F","#1560BD","#0B3D5C"];
 
 async function loadHistory(){
@@ -2633,7 +2652,10 @@ async function loadHistory(){
     var r=await fetch(SUPABASE_URL+"/rest/v1/snapshots?select=holding_id,amount,as_of&order=as_of.asc",{headers:headers()});
     var d=await r.json();
     snaps = r.ok ? d : [];
-  }catch(e){ snaps=[]; }
+    var r2=await fetch(SUPABASE_URL+"/rest/v1/entity_snapshots?select=entity_type,entity_id,amount,field,as_of&order=as_of.asc",{headers:headers()});
+    var d2=await r2.json();
+    esnaps = r2.ok ? d2 : [];
+  }catch(e){ snaps=[]; esnaps=[]; }
 }
 
 /* envelope value on each date: last snapshot per holding carried forward */
@@ -2677,14 +2699,45 @@ function envSeries(envIds){
   return {dates:keep, byEnv:byEnv};
 }
 
+/* series for insurance policies / kids accounts from entity_snapshots.
+   Each selected id is one entity; value carried forward between dates. */
+function entitySeries(kind, ids){
+  var rel=esnaps.filter(function(s){ return s.entity_type===kind && ids.indexOf(s.entity_id)>=0; });
+  if(!rel.length) return {dates:[],byEnv:{}};
+  var seen={}, dates=[];
+  rel.forEach(function(s){ if(!seen[s.as_of]){ seen[s.as_of]=1; dates.push(s.as_of); } });
+  dates.sort();
+  var cutoff=new Date(Date.now()-histRange*86400000).toISOString().slice(0,10);
+  var keep=dates.filter(function(d){ return d>=cutoff; });
+  if(keep.length<2) keep=dates;
+  var last={}, byEnv={};
+  ids.forEach(function(id){ byEnv[id]=[]; });
+  var walk={};
+  dates.forEach(function(d){
+    rel.forEach(function(s){ if(s.as_of===d) last[s.entity_id]=Number(s.amount); });
+    var snap={}; ids.forEach(function(id){ snap[id]=last[id]||0; });
+    walk[d]=snap;
+  });
+  keep.forEach(function(d){ ids.forEach(function(id){ byEnv[id].push(walk[d][id]); }); });
+  return {dates:keep, byEnv:byEnv};
+}
+
+function histItems(){
+  if(histSource==="insurance")
+    return policies.map(function(p){ return {id:p.id, name:p.insurer+(p.policy_name?" \u00b7 "+p.policy_name:"")+" ("+(p.insured||"")+")"}; });
+  if(histSource==="kids")
+    return kids.map(function(k){ return {id:k.id, name:k.child+" \u00b7 "+(k.account_type||"account")}; });
+  return raw.map(function(e){ return {id:e.id, name:e.name}; });
+}
+
 function renderHistory(){
-  var list=raw.slice().sort(function(a,b){ return (a.name||"").localeCompare(b.name||""); });
-  $("histPick").innerHTML=list.map(function(e){
+  var list=histItems().sort(function(a,b){ return (a.name||"").localeCompare(b.name||""); });
+  $("histPick").innerHTML=list.length ? list.map(function(e){
     return '<label class="row" style="gap:7px;padding:5px 9px;font-size:12.5px;cursor:pointer;border-radius:7px;'+
       (histSel[e.id]?'background:var(--teal-soft)':'')+'">'+
       '<input type="checkbox" class="hSel" data-id="'+esc(e.id)+'" '+(histSel[e.id]?"checked":"")+'>'+
       esc(e.name)+'</label>';
-  }).join("");
+  }).join("") : '<div class="muted" style="padding:12px">Nothing to chart in this category yet.</div>';
 
   var sels=document.querySelectorAll(".hSel");
   for(var i=0;i<sels.length;i++) sels[i].addEventListener("change",function(){
@@ -2693,18 +2746,21 @@ function renderHistory(){
     renderHistory();
   });
 
-  var ids=Object.keys(histSel);
+  var ids=Object.keys(histSel).filter(function(id){
+    return list.some(function(e){ return e.id===id; });
+  });
+  var noun = histSource==="insurance" ? "policies" : (histSource==="kids" ? "accounts" : "envelopes");
   if(!ids.length){
     $("chart").innerHTML='<div class="muted" style="padding:40px 20px;text-align:center;line-height:1.7">'+
-      'Choose one or more envelopes to chart.<br>Pick several and switch to <b>Combined</b> to see them summed \u2014 '+
-      'House plus House Projects, for instance.</div>';
+      'Choose one or more '+noun+' to chart.<br>Pick several and switch to <b>Combined</b> to see them summed.</div>';
     return;
   }
-  var S=envSeries(ids);
+  var S = histSource==="envelopes" ? envSeries(ids)
+        : entitySeries(histSource==="insurance"?"insurance":"kid", ids);
   if(S.dates.length<2){
     $("chart").innerHTML='<div class="muted" style="padding:40px 20px;text-align:center;line-height:1.7">'+
-      'Not enough history yet \u2014 there are '+S.dates.length+' recorded point'+(S.dates.length===1?"":"s")+
-      ' for this selection.<br>Every time you edit a balance, a dated snapshot is written, so this fills in as you go.</div>';
+      'Not enough history yet \u2014 there '+(S.dates.length===1?"is 1 recorded point":"are "+S.dates.length+" recorded points")+
+      ' for this selection.<br>Each time you update a value, a dated snapshot is written, so this fills in as you go.</div>';
     return;
   }
   drawChart(S, ids);
@@ -2919,6 +2975,15 @@ $("kidModal").addEventListener("click",function(e){ if(e.target===this) closeKid
 $("kChild").addEventListener("change",function(){
   $("kNewChild").classList.toggle("hidden", this.value!=="__new"); });
 $("histClear").addEventListener("click",function(){ histSel={}; renderHistory(); });
+var hsc=document.querySelectorAll("[data-hs]");
+for(var hs=0;hs<hsc.length;hs++) hsc[hs].addEventListener("click",function(){
+  for(var k=0;k<hsc.length;k++) hsc[k].classList.remove("on");
+  this.classList.add("on");
+  histSource=this.getAttribute("data-hs");
+  histSel={};
+  $("histPickTitle").textContent = (histSource==="insurance"?"Policies":(histSource==="kids"?"Accounts":"Envelopes"))+" to chart";
+  renderHistory();
+});
 var hmc=document.querySelectorAll("[data-hm]");
 for(var hm=0;hm<hmc.length;hm++) hmc[hm].addEventListener("click",function(){
   for(var k=0;k<hmc.length;k++) hmc[k].classList.remove("on");
