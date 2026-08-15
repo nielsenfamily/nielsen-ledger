@@ -2987,20 +2987,30 @@ function accountHoldings(){
 
 function renderRecon(){
   var byId=accountHoldings();
-  // group accounts by institution, only active
+  // group by institution + owner, so "Barclays · Jared" and "Barclays · Kayla" are distinct
+  var owner=reconOwner;
   var groups={};
-  accts.filter(function(a){ return a.active!==false; }).forEach(function(a){
+  accts.filter(function(a){ return a.active!==false; })
+       .filter(function(a){ return owner==="all" || a.owner===owner || a.owner==="Joint"; })
+       .forEach(function(a){
     var inst=(a.institutions&&a.institutions.name)||"Other";
-    var key=inst;
-    if(!groups[key]) groups[key]={inst:inst, color:(a.institutions&&a.institutions.color)||"#5A6B78", accounts:[]};
+    var own=a.owner||"Joint";
+    var key=inst+" \u00b7 "+own;
+    if(!groups[key]) groups[key]={inst:inst, owner:own, label:inst+" \u00b7 "+own,
+      color:(a.institutions&&a.institutions.color)||"#5A6B78", accounts:[]};
     groups[key].accounts.push(a);
   });
 
-  var owner=reconOwner;
-  var names=Object.keys(groups).sort();
+  // sort: institution name first, then owner (Jared, Kayla, Joint)
+  var ownRank={Jared:0,Kayla:1,Joint:2};
+  var names=Object.keys(groups).sort(function(a,b){
+    var ga=groups[a], gb=groups[b];
+    if(ga.inst!==gb.inst) return ga.inst.localeCompare(gb.inst);
+    return (ownRank[ga.owner]==null?9:ownRank[ga.owner])-(ownRank[gb.owner]==null?9:ownRank[gb.owner]);
+  });
   var html=names.map(function(k){
     var g=groups[k];
-    var accts2=g.accounts.filter(function(a){ return owner==="all" || a.owner===owner || a.owner==="Joint"; });
+    var accts2=g.accounts;
     if(!accts2.length) return "";
     // institution subtotal = sum of holdings across its accounts
     var instTotal=0;
@@ -3048,7 +3058,7 @@ function renderRecon(){
     return '<section class="panel" style="margin-bottom:12px">'+
       '<div class="panel-head"><span class="row" style="gap:8px">'+
         '<span class="dot" style="background:'+esc(g.color)+'"></span>'+
-        '<span class="panel-title">'+esc(g.inst)+'</span></span>'+
+        '<span class="panel-title">'+esc(g.label)+'</span></span>'+
         '<span class="num" style="font-weight:800">'+fmt(instTotal)+'</span></div>'+
       body+'</section>';
   }).join("");
