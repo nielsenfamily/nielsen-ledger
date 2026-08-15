@@ -690,6 +690,51 @@
         <button id="newEnv" class="btn">+ Envelope</button>
       </div>
     </div>
+
+    <details id="legend" class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+      <summary style="cursor:pointer;padding:12px 16px;font-weight:700;font-size:13.5px;list-style:none;display:flex;align-items:center;justify-content:space-between">
+        <span>What do these labels mean? &mdash; a quick reference</span>
+        <span class="muted" style="font-weight:600">tap to open</span>
+      </summary>
+      <div style="padding:4px 16px 16px">
+
+        <div class="eyebrow" style="letter-spacing:1.2px;margin:8px 0 6px">Envelope types &mdash; how a pot of money behaves</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px 20px">
+          <div><span class="tag" style="color:var(--teal);background:var(--teal-soft)">Flow</span>
+            <span style="font-size:12.5px;color:var(--ink-soft)"> &mdash; money in and out each month. Food, gas, everyday spending. A low balance at month&rsquo;s end is normal.</span></div>
+          <div><span class="tag" style="color:var(--slate);background:var(--slate-soft)">Reserve</span>
+            <span style="font-size:12.5px;color:var(--ink-soft)"> &mdash; a sinking fund: fills up slowly for a big future cost (a car, taxes, medical), then gets drawn down when it hits.</span></div>
+          <div><span class="tag" style="color:var(--gold);background:var(--gold-soft)">Goal</span>
+            <span style="font-size:12.5px;color:var(--ink-soft)"> &mdash; like a reserve, but with a target amount and date you&rsquo;re saving toward. Shows a progress bar.</span></div>
+          <div><span class="tag" style="color:var(--green);background:var(--green-soft)">Floor</span>
+            <span style="font-size:12.5px;color:var(--ink-soft)"> &mdash; protected money you don&rsquo;t spend. Emergency. It sits there on purpose.</span></div>
+          <div><span class="tag" style="color:var(--rust);background:var(--rust-soft)">Project</span>
+            <span style="font-size:12.5px;color:var(--ink-soft)"> &mdash; temporary, for a one-off. Closes out when the project is done.</span></div>
+        </div>
+
+        <div class="eyebrow" style="letter-spacing:1.2px;margin:16px 0 6px">Categories &mdash; how envelopes are grouped on screen</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px 20px;font-size:12.5px;color:var(--ink-soft)">
+          <div><b style="color:var(--ink)">Daily</b> &mdash; the everyday envelopes you touch often: Food, House, Car Expenses.</div>
+          <div><b style="color:var(--ink)">Reserves</b> &mdash; sinking funds building toward larger, expected costs.</div>
+          <div><b style="color:var(--ink)">Goals</b> &mdash; specific things you&rsquo;re saving toward with a target.</div>
+          <div><b style="color:var(--ink)">Giving</b> &mdash; generosity: church, parents, long-term giving.</div>
+          <div><b style="color:var(--ink)">Retirement</b> &mdash; long-horizon retirement holdings, shown apart from spendable money.</div>
+          <div><b style="color:var(--ink)">Long Term</b> &mdash; savings meant to sit and grow, not for near-term use.</div>
+          <div style="grid-column:1/-1;font-style:italic">Categories are just labels for grouping &mdash; you can rename them or invent your own, and envelopes regroup automatically.</div>
+        </div>
+
+        <div class="eyebrow" style="letter-spacing:1.2px;margin:16px 0 6px">Account kinds &mdash; what an account is at the bank</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px 20px;font-size:12.5px;color:var(--ink-soft)">
+          <div><b style="color:var(--ink)">Savings</b> &mdash; a place money sits (most of our envelope containers).</div>
+          <div><b style="color:var(--ink)">Checking</b> &mdash; the account bills are paid from.</div>
+          <div><b style="color:var(--ink)">Credit card</b> &mdash; a card; charges get categorized and paid off.</div>
+          <div><b style="color:var(--ink)">Investment</b> &mdash; brokerage, Roth, HSA &mdash; balances that move with the market.</div>
+          <div style="grid-column:1/-1;font-style:italic">A <b>locked</b> account (CD, retirement) just means the money isn&rsquo;t meant to be touched right now &mdash; it&rsquo;s information, not a warning.</div>
+        </div>
+
+      </div>
+    </details>
+
     <div id="manageBody"></div>
     <p class="muted" style="margin-top:22px;line-height:1.6">
       Edits save when you leave a field. Changing an envelope&rsquo;s owner or category only changes
