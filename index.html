@@ -128,6 +128,7 @@
       <button class="tab" data-tab="kids">Kids</button>
       <button class="tab" data-tab="insurance">Insurance</button>
       <button class="tab" data-tab="notes">Notes</button>
+      <button class="tab" data-tab="reconcile">Reconcile</button>
       <button class="tab" data-tab="manage">Manage</button>
       <button class="tab" data-tab="documents">Documents</button>
       <button class="tab" data-tab="export">Export</button>
@@ -656,6 +657,26 @@
     </div>
   </div>
 
+
+  <!-- RECONCILE VIEW -->
+  <div id="viewReconcile" class="hidden">
+    <div class="card" style="padding:14px 18px;margin-bottom:14px">
+      <div class="row between wrapf" style="gap:12px">
+        <div style="flex:1;min-width:240px;font-size:13px;line-height:1.6;color:var(--ink-soft)">
+          What each bank actually holds, built up from the envelopes inside it. Expand an account to
+          see its envelopes and type the balance shown at the bank &mdash; the app tells you whether
+          your envelopes add up to it. Handy after interest posts.
+        </div>
+        <div class="row wrapf" style="gap:6px">
+          <button class="chip on" data-ro="all">All</button>
+          <button class="chip" data-ro="Jared">Jared</button>
+          <button class="chip" data-ro="Kayla">Kayla</button>
+        </div>
+      </div>
+    </div>
+    <div id="reconBody"></div>
+  </div>
+
   <!-- MANAGE VIEW -->
   <div id="viewManage" class="hidden">
     <div class="row between wrapf" style="gap:10px;margin-bottom:14px">
@@ -1069,6 +1090,7 @@ function draw(){
   $("viewKids").classList.add("hidden");
   $("viewHistory").classList.add("hidden");
   $("viewDocuments").classList.add("hidden");
+  $("viewReconcile").classList.add("hidden");
   if(tab==="envelopes"){ $("viewEnvelopes").classList.remove("hidden"); renderEnvelopes(); wireEnv(); }
   else if(tab==="txns"){ $("viewTxns").classList.remove("hidden"); renderTxns(); }
   else if(tab==="notes"){ $("viewNotes").classList.remove("hidden"); renderNotes(); }
@@ -1077,6 +1099,7 @@ function draw(){
   else if(tab==="kids"){ $("viewKids").classList.remove("hidden"); renderKids(); }
   else if(tab==="history"){ $("viewHistory").classList.remove("hidden"); renderHistory(); }
   else if(tab==="documents"){ $("viewDocuments").classList.remove("hidden"); renderDocs(); }
+  else if(tab==="reconcile"){ $("viewReconcile").classList.remove("hidden"); renderRecon(); }
   else { $("viewManage").classList.remove("hidden"); renderManage(); }
 }
 
@@ -2538,6 +2561,7 @@ function byKidOrder(a,b){
 }
 var editingKid=null;
 var showArchived=false;
+var reconOpen={}, reconOwner="all";
 
 function renderKids(){
   var groups={};
@@ -2941,6 +2965,108 @@ async function saveDocData(){
   finally{ b.disabled=false; b.textContent="Save data"; }
 }
 
+
+/* ================= RECONCILE (balances by bank) ================= */
+var reconInput={};  // account_id -> typed actual balance (session only)
+
+function accountHoldings(){
+  // account_id -> { total, rows:[{env, amount, isPct}] }
+  var m={};
+  raw.forEach(function(e){
+    (e.holdings||[]).forEach(function(h){
+      var a=h.accounts; if(!a) return;
+      var isPct=h.percent_of_account!=null;
+      var val=isPct?((Number(a.balance)||0)*Number(h.percent_of_account))/100:Number(h.amount||0);
+      if(!m[a.id]) m[a.id]={total:0,rows:[],acct:a};
+      m[a.id].total+=val;
+      m[a.id].rows.push({env:e.name, amount:val, isPct:isPct, pct:h.percent_of_account});
+    });
+  });
+  return m;
+}
+
+function renderRecon(){
+  var byId=accountHoldings();
+  // group accounts by institution, only active
+  var groups={};
+  accts.filter(function(a){ return a.active!==false; }).forEach(function(a){
+    var inst=(a.institutions&&a.institutions.name)||"Other";
+    var key=inst;
+    if(!groups[key]) groups[key]={inst:inst, color:(a.institutions&&a.institutions.color)||"#5A6B78", accounts:[]};
+    groups[key].accounts.push(a);
+  });
+
+  var owner=reconOwner;
+  var names=Object.keys(groups).sort();
+  var html=names.map(function(k){
+    var g=groups[k];
+    var accts2=g.accounts.filter(function(a){ return owner==="all" || a.owner===owner || a.owner==="Joint"; });
+    if(!accts2.length) return "";
+    // institution subtotal = sum of holdings across its accounts
+    var instTotal=0;
+    accts2.forEach(function(a){ instTotal += (byId[a.id]?byId[a.id].total:0); });
+
+    var body=accts2.sort(function(a,b){ return (a.name||"").localeCompare(b.name||""); }).map(function(a){
+      var info=byId[a.id]||{total:0,rows:[]};
+      var typed=reconInput[a.id];
+      var diff = (typed!==undefined && typed!=="") ? (parseFloat(typed)-info.total) : null;
+      var diffTxt="";
+      if(diff!==null){
+        if(Math.abs(diff)<0.005) diffTxt='<span class="tag" style="color:var(--green);background:var(--green-soft)">matches \u2713</span>';
+        else diffTxt='<span class="tag" style="color:var(--rust);background:var(--rust-soft)">'+(diff>0?"+":"")+fmt(diff)+' vs envelopes</span>';
+      }
+      var rows=info.rows.sort(function(x,y){ return y.amount-x.amount; }).map(function(r){
+        return '<div style="display:flex;justify-content:space-between;padding:3px 0 3px 20px;font-size:12px;color:var(--ink-soft)">'+
+          '<span>'+esc(r.env)+(r.isPct?' <span class="muted">('+esc(r.pct)+'%)</span>':'')+'</span>'+
+          '<span class="num">'+fmt(r.amount)+'</span></div>';
+      }).join("");
+      var open=!!reconOpen[a.id];
+      return '<div style="border-top:1px solid var(--paper);padding:10px 16px">'+
+        '<div class="row between wrapf" style="gap:8px">'+
+          '<button class="reconTog" data-id="'+esc(a.id)+'" style="background:none;border:none;cursor:pointer;text-align:left;padding:0;font:inherit;color:var(--ink)">'+
+            '<span style="color:var(--ink-soft);font-size:11px">'+(open?"\u25be":"\u25b8")+'</span> '+
+            '<span style="font-weight:650;font-size:13.5px">'+esc(a.name)+'</span>'+
+            (a.last_four?' <span class="muted">\u2026'+esc(a.last_four)+'</span>':'')+
+          '</button>'+
+          '<span class="row wrapf" style="gap:10px;align-items:center">'+
+            diffTxt+
+            '<span class="muted">envelopes:</span>'+
+            '<span class="num" style="font-weight:800;font-size:14px">'+fmt(info.total)+'</span>'+
+          '</span>'+
+        '</div>'+
+        (open?'<div style="margin-top:6px">'+
+          (rows||'<div class="muted" style="padding-left:20px">No envelopes point here yet.</div>')+
+          '<div class="row wrapf" style="gap:8px;align-items:center;margin-top:8px;padding-left:20px">'+
+            '<span class="muted">Actual balance at bank:</span>'+
+            '<input class="reconIn" data-id="'+esc(a.id)+'" type="number" step="0.01" placeholder="type to compare" '+
+              'value="'+(typed!==undefined?esc(typed):"")+'" style="width:130px;font-size:12.5px;padding:5px 8px;border:1px solid var(--line);border-radius:7px;font-family:inherit">'+
+          '</div>'+
+        '</div>':'')+
+      '</div>';
+    }).join("");
+
+    return '<section class="panel" style="margin-bottom:12px">'+
+      '<div class="panel-head"><span class="row" style="gap:8px">'+
+        '<span class="dot" style="background:'+esc(g.color)+'"></span>'+
+        '<span class="panel-title">'+esc(g.inst)+'</span></span>'+
+        '<span class="num" style="font-weight:800">'+fmt(instTotal)+'</span></div>'+
+      body+'</section>';
+  }).join("");
+
+  $("reconBody").innerHTML=html || '<div class="muted" style="padding:20px">No accounts for this filter.</div>';
+
+  var tg=document.querySelectorAll(".reconTog");
+  for(var i=0;i<tg.length;i++) tg[i].addEventListener("click",function(){
+    var id=this.getAttribute("data-id"); reconOpen[id]=!reconOpen[id]; renderRecon();
+  });
+  var ins=document.querySelectorAll(".reconIn");
+  for(var j=0;j<ins.length;j++){
+    ins[j].addEventListener("input",function(){ reconInput[this.getAttribute("data-id")]=this.value; });
+    ins[j].addEventListener("change",function(){ reconInput[this.getAttribute("data-id")]=this.value; renderRecon(); });
+    ins[j].addEventListener("click",function(e){ e.stopPropagation(); });
+  }
+}
+
 $("signin").addEventListener("click",signIn);
 $("refresh").addEventListener("click",load);
 $("signout").addEventListener("click",signOut);
@@ -3012,6 +3138,10 @@ $("amArchive").addEventListener("click",archiveAcct);
 $("amDelete").addEventListener("click",deleteAcct);
 $("acctMenu").addEventListener("click",function(e){ if(e.target===this) closeAcctMenu(); });
 $("showArch").addEventListener("change",function(){ showArchived=this.checked; renderManage(); });
+var roc=document.querySelectorAll("[data-ro]");
+for(var ro=0;ro<roc.length;ro++) roc[ro].addEventListener("click",function(){
+  for(var k=0;k<roc.length;k++) roc[k].classList.remove("on");
+  this.classList.add("on"); reconOwner=this.getAttribute("data-ro"); renderRecon(); });
 $("closeLink").addEventListener("click",closeLink);
 $("lkSave").addEventListener("click",saveLink);
 $("linkModal").addEventListener("click",function(e){ if(e.target===this) closeLink(); });
