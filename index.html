@@ -685,7 +685,7 @@
         <button class="chip" data-mtab="envelopes">Envelopes</button>
       </div>
       <div class="row wrapf" style="gap:8px">
-        <label class="row muted" style="gap:6px;font-size:12px"><input type="checkbox" id="showArch"> show archived</label>
+        <label class="row muted" style="gap:6px;font-size:12px"><input type="checkbox" id="showArch"> show archived/closed</label>
         <button id="newAcct" class="btn">+ Account</button>
         <button id="newEnv" class="btn">+ Envelope</button>
       </div>
@@ -1103,22 +1103,30 @@ function renderManage(){
         }).join("")+'</section>';
     }).join("");
   }else{
-    var sorted=raw.slice().sort(function(a,b){
+    var pool=raw.filter(function(e){ return showArchived || e.status!=="closed"; });
+    var sorted=pool.slice().sort(function(a,b){
       if((a.owner||"")!==(b.owner||"")) return (a.owner||"").localeCompare(b.owner||"");
       return (a.name||"").localeCompare(b.name||"");
     });
+    var closedCount=raw.filter(function(e){ return e.status==="closed"; }).length;
     body.innerHTML='<section class="panel">'+
       '<div class="panel-head"><span class="panel-title">Envelopes</span>'+
-      '<span class="muted">'+sorted.length+' total</span></div>'+
-      '<div class="mrow env-cols mhead"><span>Name</span><span>Owner</span><span>Type</span><span>Category</span><span>Parent</span><span>Link</span></div>'+
+      '<span class="muted">'+sorted.length+' shown'+(closedCount&&!showArchived?" \u00b7 "+closedCount+" closed":"")+'</span></div>'+
+      '<div class="mrow env-cols mhead"><span>Name</span><span>Owner</span><span>Type</span><span>Category</span><span>Parent</span><span></span></div>'+
       sorted.map(function(e){
-        return '<div class="mrow env-cols">'+
+        var closed=e.status==="closed";
+        return '<div class="mrow env-cols"'+(closed?' style="opacity:.55"':'')+'>'+
           '<input class="mi" value="'+esc(e.name)+'" data-t="envelopes" data-id="'+esc(e.id)+'" data-f="name">'+
           sel(e.owner||"Joint",OWNERS,"mi",'data-t="envelopes" data-id="'+esc(e.id)+'" data-f="owner"')+
           sel(e.type||"flow",TYPES,"mi",'data-t="envelopes" data-id="'+esc(e.id)+'" data-f="type"')+
           '<input class="mi" list="catlist" value="'+esc(e.category||"")+'" placeholder="uncategorized" data-t="envelopes" data-id="'+esc(e.id)+'" data-f="category">'+
           parentSel(e)+
-          '<button class="btn envLink" data-id="'+esc(e.id)+'" style="padding:4px 8px;font-size:11px">+ acct</button>'+
+          '<span class="row" style="gap:4px">'+
+            '<button class="btn envLink" data-id="'+esc(e.id)+'" style="padding:4px 7px;font-size:11px" title="Link an account">+ acct</button>'+
+            (closed
+              ? '<button class="btn envRestore" data-id="'+esc(e.id)+'" style="padding:4px 7px;font-size:11px" title="Reopen">\u21ba</button>'
+              : '<button class="btn envClose" data-id="'+esc(e.id)+'" style="padding:4px 7px;font-size:11px" title="Close / archive">\u2715</button>')+
+          '</span>'+
         '</div>';
       }).join("")+'</section>';
   }
@@ -1201,6 +1209,32 @@ function wireManage(){
     await patch("accounts",this.getAttribute("data-id"),{active:true},true);
     for(var k=0;k<accts.length;k++) if(accts[k].id===this.getAttribute("data-id")) accts[k].active=true;
     toast("Restored"); draw(); });
+
+  var ec=document.querySelectorAll(".envClose");
+  for(var e1=0;e1<ec.length;e1++) ec[e1].addEventListener("click",async function(){
+    var id=this.getAttribute("data-id"), env=null;
+    for(var k=0;k<raw.length;k++) if(raw[k].id===id) env=raw[k];
+    if(!env) return;
+    // sum current value to warn if money remains
+    var total=0;
+    (env.holdings||[]).forEach(function(h){
+      var a=h.accounts||{};
+      total += h.percent_of_account!=null ? ((Number(a.balance)||0)*Number(h.percent_of_account))/100 : Number(h.amount||0);
+    });
+    var msg="Close \u201c"+env.name+"\u201d? It will be hidden from the Envelopes tab but its history is kept, and you can reopen it anytime.";
+    if(total>0.005) msg+="\n\nNote: it still holds "+fmt(total)+". Closing doesn't move that money \u2014 you may want to reallocate it first.";
+    if(!confirm(msg)) return;
+    await patch("envelopes",id,{status:"closed"},true);
+    for(var k2=0;k2<raw.length;k2++) if(raw[k2].id===id) raw[k2].status="closed";
+    toast("Closed"); draw(); });
+
+  var er=document.querySelectorAll(".envRestore");
+  for(var e2=0;e2<er.length;e2++) er[e2].addEventListener("click",async function(){
+    var id=this.getAttribute("data-id");
+    await patch("envelopes",id,{status:"active"},true);
+    for(var k=0;k<raw.length;k++) if(raw[k].id===id) raw[k].status="active";
+    toast("Reopened"); draw(); });
+
   var lb=document.querySelectorAll(".envLink");
   for(var q=0;q<lb.length;q++) lb[q].addEventListener("click",function(){
     openLink(this.getAttribute("data-id")); });
