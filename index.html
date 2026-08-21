@@ -418,6 +418,7 @@
   <div id="viewHistory" class="hidden">
     <div class="row wrapf" style="gap:6px;margin-bottom:12px">
       <button class="chip on" data-hs="envelopes">Envelopes</button>
+      <button class="chip" data-hs="accounts">Accounts</button>
       <button class="chip" data-hs="insurance">Insurance</button>
       <button class="chip" data-hs="kids">Kids</button>
     </div>
@@ -443,8 +444,10 @@
     </div>
     <p class="muted" style="margin-top:18px;line-height:1.6">
       Every balance edit writes a dated snapshot, so this fills in over time rather than needing
-      anything set up. Percentage-based holdings aren&rsquo;t charted &mdash; their value is computed
-      from an account balance rather than stored, so there&rsquo;s no snapshot behind them.
+      anything set up. Envelopes built from percentage holdings (like Retirement) show little under
+      the <b>Envelopes</b> source &mdash; their value is computed from account balances rather than
+      stored. To chart those, use the <b>Accounts</b> source above and pick the accounts directly;
+      Compare shows which is growing fastest, Combined sums them.
     </p>
   </div>
 
@@ -888,7 +891,17 @@ async function savePercent(hid, value){
 async function saveAmount(hid, aid, isPct, value){
   var today=new Date().toISOString().slice(0,10);
   if(isPct){
-    await patch("accounts", aid, {balance:value, balance_as_of:today});
+    var okA=await patch("accounts", aid, {balance:value, balance_as_of:today});
+    // record account-balance history (only on real change)
+    if(okA){
+      var prevBal=null;
+      for(var ai=0; ai<accts.length; ai++) if(accts[ai].id===aid) prevBal=accts[ai].balance;
+      if(prevBal==null || Number(prevBal)!==Number(value)){
+        await fetch(SUPABASE_URL+"/rest/v1/entity_snapshots",{
+          method:"POST",headers:headers({Prefer:"return=minimal"}),
+          body:JSON.stringify({entity_type:"account",entity_id:aid,amount:value,field:"balance",as_of:today})});
+      }
+    }
   }else{
     var ok=await patch("holdings", hid, {amount:value});
     if(ok) await fetch(SUPABASE_URL+"/rest/v1/snapshots",{
@@ -2830,6 +2843,10 @@ function histItems(){
     return policies.map(function(p){ return {id:p.id, name:p.insurer+(p.policy_name?" \u00b7 "+p.policy_name:"")+" ("+(p.insured||"")+")"}; });
   if(histSource==="kids")
     return kids.map(function(k){ return {id:k.id, name:k.child+" \u00b7 "+(k.account_type||"account")}; });
+  if(histSource==="accounts")
+    return accts.filter(function(a){ return a.active!==false; }).map(function(a){
+      var inst=(a.institutions&&a.institutions.name)||"";
+      return {id:a.id, name:a.name+(inst?" \u00b7 "+inst:"")+(a.owner&&a.owner!=="Joint"?" \u00b7 "+a.owner:"")}; });
   return raw.map(function(e){ return {id:e.id, name:e.name}; });
 }
 
@@ -2852,13 +2869,14 @@ function renderHistory(){
   var ids=Object.keys(histSel).filter(function(id){
     return list.some(function(e){ return e.id===id; });
   });
-  var noun = histSource==="insurance" ? "policies" : (histSource==="kids" ? "accounts" : "envelopes");
+  var noun = histSource==="insurance" ? "policies" : (histSource==="kids" ? "accounts" : (histSource==="accounts" ? "accounts" : "envelopes"));
   if(!ids.length){
     $("chart").innerHTML='<div class="muted" style="padding:40px 20px;text-align:center;line-height:1.7">'+
       'Choose one or more '+noun+' to chart.<br>Pick several and switch to <b>Combined</b> to see them summed.</div>';
     return;
   }
   var S = histSource==="envelopes" ? envSeries(ids)
+        : histSource==="accounts" ? entitySeries("account", ids)
         : entitySeries(histSource==="insurance"?"insurance":"kid", ids);
   if(S.dates.length<2){
     $("chart").innerHTML='<div class="muted" style="padding:40px 20px;text-align:center;line-height:1.7">'+
@@ -3196,7 +3214,7 @@ for(var hs=0;hs<hsc.length;hs++) hsc[hs].addEventListener("click",function(){
   this.classList.add("on");
   histSource=this.getAttribute("data-hs");
   histSel={};
-  $("histPickTitle").textContent = (histSource==="insurance"?"Policies":(histSource==="kids"?"Accounts":"Envelopes"))+" to chart";
+  $("histPickTitle").textContent = (histSource==="insurance"?"Policies":(histSource==="kids"?"Accounts":(histSource==="accounts"?"Accounts":"Envelopes")))+" to chart";
   renderHistory();
 });
 var hmc=document.querySelectorAll("[data-hm]");
