@@ -2774,39 +2774,68 @@ async function loadHistory(){
   }catch(e){ snaps=[]; esnaps=[]; }
 }
 
-/* envelope value on each date: last snapshot per holding carried forward */
+/* envelope value on each date.
+   Two contributions per envelope, unified on one date axis:
+     - fixed holdings   -> from `snaps` (holding snapshots), carried forward
+     - percentage holdings -> from account snapshots in `esnaps`, times the
+       holding's percent, carried forward. This makes percentage-based
+       envelopes (Retirement, Long Term Savings, etc.) chart correctly, with
+       each account weighted by its real share (e.g. 67% of the Robinhood Roth).
+   Note: today's percentages are applied across all history; if a split ever
+   changes, older points reflect the current split. Splits rarely move, so this
+   is a negligible, documented simplification. */
 function envSeries(envIds){
-  var hByEnv={};
+  // map fixed holdings -> envelope, and gather percentage holdings per envelope
+  var hByEnv={};        // holding_id -> envelope_id (fixed only)
+  var pctHoldings=[];   // {env, account_id, pct}
   raw.forEach(function(e){
+    if(envIds.indexOf(e.id)<0) return;
     (e.holdings||[]).forEach(function(h){
-      if(h.amount==null) return;          /* percentage holdings aren't snapshotted */
-      hByEnv[h.id]=e.id;
+      if(h.percent_of_account!=null){
+        var aid=h.accounts&&h.accounts.id;
+        if(aid) pctHoldings.push({env:e.id, aid:aid, pct:Number(h.percent_of_account)});
+      }else{
+        hByEnv[h.id]=e.id;
+      }
     });
   });
-  var rel=snaps.filter(function(s){ return envIds.indexOf(hByEnv[s.holding_id])>=0; });
-  if(!rel.length) return {dates:[],byEnv:{}};
 
-  var dates=[];
-  var seen={};
-  rel.forEach(function(s){ if(!seen[s.as_of]){ seen[s.as_of]=1; dates.push(s.as_of); } });
+  // relevant snapshots from both sources
+  var relFixed=snaps.filter(function(s){ return hByEnv[s.holding_id]!=null; });
+  var pctAids={}; pctHoldings.forEach(function(p){ pctAids[p.aid]=1; });
+  var relAcct=esnaps.filter(function(s){ return s.entity_type==="account" && pctAids[s.entity_id]; });
+
+  if(!relFixed.length && !relAcct.length) return {dates:[],byEnv:{}};
+
+  // unified sorted date axis
+  var seen={}, dates=[];
+  relFixed.forEach(function(s){ if(!seen[s.as_of]){ seen[s.as_of]=1; dates.push(s.as_of); } });
+  relAcct.forEach(function(s){ if(!seen[s.as_of]){ seen[s.as_of]=1; dates.push(s.as_of); } });
   dates.sort();
   var cutoff=new Date(Date.now()-histRange*86400000).toISOString().slice(0,10);
   var keep=dates.filter(function(d){ return d>=cutoff; });
   if(keep.length<2) keep=dates;
 
-  var last={}, byEnv={};
+  var lastH={};   // holding_id -> last fixed amount
+  var lastA={};   // account_id  -> last balance
+  var byEnv={};
   envIds.forEach(function(id){ byEnv[id]=[]; });
-  var idx=0;
-  var all=dates;
   var walk={};
-  all.forEach(function(d){
-    rel.forEach(function(s){ if(s.as_of===d) last[s.holding_id]=Number(s.amount); });
+  dates.forEach(function(d){
+    relFixed.forEach(function(s){ if(s.as_of===d) lastH[s.holding_id]=Number(s.amount); });
+    relAcct.forEach(function(s){ if(s.as_of===d) lastA[s.entity_id]=Number(s.amount); });
     var totals={};
     envIds.forEach(function(id){ totals[id]=0; });
-    for(var hid in last){
+    // fixed
+    for(var hid in lastH){
       var eid=hByEnv[hid];
-      if(totals[eid]!==undefined) totals[eid]+=last[hid];
+      if(totals[eid]!==undefined) totals[eid]+=lastH[hid];
     }
+    // percentage
+    pctHoldings.forEach(function(p){
+      var bal=lastA[p.aid];
+      if(bal!=null && totals[p.env]!==undefined) totals[p.env]+=bal*p.pct/100;
+    });
     walk[d]=totals;
   });
   keep.forEach(function(d){
