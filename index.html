@@ -785,6 +785,18 @@ var TYPES = ["flow","sinking","goal","floor","project"];
 
 function $(id){ return document.getElementById(id); }
 function fmt(n){ return (n||0).toLocaleString("en-US",{style:"currency",currency:"USD"}); }
+function localDate(){
+  // Calendar date in the household's timezone (Central), not UTC.
+  // Fixes snapshots stamped a day ahead when editing in the evening.
+  try{
+    var parts=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Chicago",
+      year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+    if(/^\d{4}-\d{2}-\d{2}$/.test(parts)) return parts;
+  }catch(e){}
+  // fallback: local machine date (still better than UTC)
+  var d=new Date(); var m=("0"+(d.getMonth()+1)).slice(-2), day=("0"+d.getDate()).slice(-2);
+  return d.getFullYear()+"-"+m+"-"+day;
+}
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(m){
   return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]; }); }
 
@@ -889,7 +901,7 @@ async function savePercent(hid, value){
 }
 
 async function saveAmount(hid, aid, isPct, value){
-  var today=new Date().toISOString().slice(0,10);
+  var today=localDate();
   if(isPct){
     var okA=await patch("accounts", aid, {balance:value, balance_as_of:today});
     // record account-balance history (only on real change)
@@ -1344,7 +1356,7 @@ function renderTxns(){
 }
 
 async function settle(ids){
-  var today=new Date().toISOString().slice(0,10);
+  var today=localDate();
   for(var i=0;i<ids.length;i++){
     await patch("transactions", ids[i], {status:"settled", settled_at:new Date().toISOString()}, true);
   }
@@ -1361,7 +1373,7 @@ function openModal(){
       return '<option value="'+esc(a.id)+'">'+esc(a.name)+'</option>'; }).join("")+'</optgroup>'+
     '<optgroup label="Other accounts">'+others.map(function(a){
       return '<option value="'+esc(a.id)+'">'+esc(a.name)+'</option>'; }).join("")+'</optgroup>';
-  $("fDate").value=new Date().toISOString().slice(0,10);
+  $("fDate").value=localDate();
   $("fAmt").value=""; $("fMerch").value="";
   splitRows=[{env:"",amt:""}];
   drawSplits();
@@ -2083,7 +2095,7 @@ async function saveNew(){
       if($("aLast").value.trim()) body.last_four=$("aLast").value.trim();
       if($("aUntil").value) body.locked_until=$("aUntil").value;
       if($("aBal").value!==""){ body.balance=parseFloat($("aBal").value);
-        body.balance_as_of=new Date().toISOString().slice(0,10); }
+        body.balance_as_of=localDate(); }
       var r=await fetch(SUPABASE_URL+"/rest/v1/accounts",{
         method:"POST",headers:headers({Prefer:"return=minimal"}),body:JSON.stringify(body)});
       if(!r.ok){ var e1=await r.json(); throw new Error(e1.message||"Save failed"); }
@@ -2604,7 +2616,7 @@ async function savePolicy(){
       note:strOrNull("pNote")
     };
     if(body.cash_value!=null||body.surrender_value!=null||body.face_value!=null)
-      body.values_as_of=new Date().toISOString().slice(0,10);
+      body.values_as_of=localDate();
     var r;
     if(editingPolicy){
       r=await fetch(SUPABASE_URL+"/rest/v1/insurance_policies?id=eq."+editingPolicy.id,{
@@ -2716,7 +2728,7 @@ async function saveKid(){
   try{
     var body={child:child, account_type:strOrNull("kType"), institution:strOrNull("kInst"),
       last_four:strOrNull("kLast"), balance:numOrNull("kBal"), note:strOrNull("kNote")};
-    if(body.balance!=null) body.balance_as_of=new Date().toISOString().slice(0,10);
+    if(body.balance!=null) body.balance_as_of=localDate();
     var r;
     if(editingKid) r=await fetch(SUPABASE_URL+"/rest/v1/kids_accounts?id=eq."+editingKid.id,{
       method:"PATCH",headers:headers({Prefer:"return=minimal"}),body:JSON.stringify(body)});
@@ -2733,7 +2745,7 @@ async function saveKid(){
       if(!(editingKid && Number(prevBal)===Number(body.balance))){
         await fetch(SUPABASE_URL+"/rest/v1/entity_snapshots",{
           method:"POST",headers:headers({Prefer:"return=minimal"}),
-          body:JSON.stringify({entity_type:"kid",entity_id:kid,amount:body.balance,field:"balance",as_of:new Date().toISOString().slice(0,10)})});
+          body:JSON.stringify({entity_type:"kid",entity_id:kid,amount:body.balance,field:"balance",as_of:localDate()})});
       }
     }
     toast(editingKid?"Updated":"Added");
