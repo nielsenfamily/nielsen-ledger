@@ -35,6 +35,16 @@
   .tab{padding:8px 16px;font-size:13.5px;font-weight:700;border:1px solid var(--line);
     border-radius:9px;background:var(--card);color:var(--ink-soft);cursor:pointer}
   .tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .menu{position:relative;display:inline-block}
+  .menu-btn{display:inline-flex;align-items:center;gap:5px}
+  .menu-pop{position:absolute;top:calc(100% + 5px);left:0;z-index:50;min-width:190px;
+    background:var(--card);border:1px solid var(--line);border-radius:11px;
+    box-shadow:0 8px 28px rgba(18,35,46,.14);padding:5px;display:none}
+  .menu.open .menu-pop{display:block}
+  .menu-item{display:block;width:100%;text-align:left;padding:9px 12px;font-size:13.5px;
+    font-weight:600;border:none;border-radius:7px;background:none;color:var(--ink);cursor:pointer}
+  .menu-item:hover{background:var(--paper)}
+  .menu-item.on{background:var(--teal-soft);color:var(--teal)}
   .tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;white-space:nowrap}
 
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
@@ -121,17 +131,39 @@
       <div class="eyebrow">Nielsen Household</div>
       <h1>The Ledger</h1>
     </div>
-    <div class="row wrapf" style="gap:8px">
+    <div class="row wrapf" style="gap:8px" id="navbar">
       <button class="tab on" data-tab="envelopes">Envelopes</button>
       <button class="tab" data-tab="txns">Transactions</button>
-      <button class="tab" data-tab="history">History</button>
-      <button class="tab" data-tab="kids">Kids</button>
-      <button class="tab" data-tab="insurance">Insurance</button>
-      <button class="tab" data-tab="notes">Notes</button>
-      <button class="tab" data-tab="reconcile">Reconcile</button>
-      <button class="tab" data-tab="manage">Manage</button>
-      <button class="tab" data-tab="documents">Documents</button>
-      <button class="tab" data-tab="export">Export</button>
+
+      <div class="menu">
+        <button class="tab menu-btn" data-menu="money">Money <span style="font-size:9px">&#9660;</span></button>
+        <div class="menu-pop" data-pop="money">
+          <button class="menu-item" data-tab="reconcile">Reconcile</button>
+          <button class="menu-item" data-tab="history">History</button>
+        </div>
+      </div>
+
+      <div class="menu">
+        <button class="tab menu-btn" data-menu="trackers">Trackers <span style="font-size:9px">&#9660;</span></button>
+        <div class="menu-pop" data-pop="trackers">
+          <button class="menu-item" data-tab="offers">Offers</button>
+          <button class="menu-item" data-tab="credits">Credits</button>
+          <button class="menu-item" data-tab="loyalty">Loyalty</button>
+          <button class="menu-item" data-tab="insurance">Insurance</button>
+          <button class="menu-item" data-tab="kids">Kids</button>
+        </div>
+      </div>
+
+      <div class="menu">
+        <button class="tab menu-btn" data-menu="admin">Manage <span style="font-size:9px">&#9660;</span></button>
+        <div class="menu-pop" data-pop="admin">
+          <button class="menu-item" data-tab="notes">Notes</button>
+          <button class="menu-item" data-tab="manage">Accounts &amp; Envelopes</button>
+          <button class="menu-item" data-tab="documents">Documents</button>
+          <button class="menu-item" data-tab="export">Export</button>
+        </div>
+      </div>
+
       <button id="refresh" class="btn">Refresh</button>
       <button id="signout" class="btn" style="color:var(--ink-soft)">Sign out</button>
     </div>
@@ -661,6 +693,65 @@
   </div>
 
 
+
+  <!-- OFFERS VIEW -->
+  <div id="viewOffers" class="hidden"><div id="offersBody"></div></div>
+  <!-- CREDITS VIEW -->
+  <div id="viewCredits" class="hidden"><div id="creditsBody"></div></div>
+  <!-- LOYALTY VIEW -->
+  <div id="viewLoyalty" class="hidden"><div id="loyaltyBody"></div></div>
+
+  <!-- OFFER MODAL -->
+  <div id="offerModal" class="hidden" style="position:fixed;inset:0;background:rgba(18,35,46,.45);display:flex;align-items:flex-start;justify-content:center;padding:18px;overflow-y:auto;z-index:60">
+    <div class="card" style="width:100%;max-width:440px;padding:22px;margin-top:40px">
+      <div class="row between" style="margin-bottom:14px"><span id="ofTitle" style="font-size:17px;font-weight:800">Add offer</span>
+        <button id="closeOffer" class="btn" style="padding:4px 10px">&times;</button></div>
+      <div class="label">Merchant *</div><input id="ofMerchant" class="field" placeholder="e.g. Punch Bowl Social">
+      <div class="label">Detail</div><input id="ofDetail" class="field" placeholder="e.g. 5% back, up to $30">
+      <div class="label">Card</div><input id="ofCard" class="field" placeholder="e.g. Citi Double Cash 5404">
+      <div class="label">Expires</div><input id="ofExpires" type="date" class="field">
+      <div class="row" style="gap:10px"><button id="ofSave" class="primary" style="flex:1">Save</button>
+        <button id="ofDelete" class="btn hidden" style="color:var(--rust);padding:12px 16px">Delete</button></div>
+    </div>
+  </div>
+
+  <!-- CREDIT MODAL -->
+  <div id="creditModal" class="hidden" style="position:fixed;inset:0;background:rgba(18,35,46,.45);display:flex;align-items:flex-start;justify-content:center;padding:18px;overflow-y:auto;z-index:60">
+    <div class="card" style="width:100%;max-width:460px;padding:22px;margin-top:36px">
+      <div class="row between" style="margin-bottom:14px"><span id="crTitle" style="font-size:17px;font-weight:800">Add credit</span>
+        <button id="closeCredit" class="btn" style="padding:4px 10px">&times;</button></div>
+      <div class="label">Name *</div><input id="crName" class="field" placeholder="e.g. United flight credit">
+      <div class="row" style="gap:10px">
+        <div style="flex:1"><div class="label">Amount</div><input id="crAmount" type="number" step="0.01" class="field" placeholder="100.00"></div>
+        <div style="flex:1"><div class="label">Source</div><input id="crSource" class="field" placeholder="United"></div>
+      </div>
+      <div class="label">Who can use it</div><select id="crPerson" class="field"></select>
+      <div class="label">Expires</div><input id="crExpires" type="date" class="field">
+      <div class="label">Note</div><input id="crNote" class="field" placeholder="optional">
+      <div class="row" style="gap:10px"><button id="crSave" class="primary" style="flex:1">Save</button>
+        <button id="crDelete" class="btn hidden" style="color:var(--rust);padding:12px 16px">Delete</button></div>
+    </div>
+  </div>
+
+  <!-- LOYALTY MODAL -->
+  <div id="loyaltyModal" class="hidden" style="position:fixed;inset:0;background:rgba(18,35,46,.45);display:flex;align-items:flex-start;justify-content:center;padding:18px;overflow-y:auto;z-index:60">
+    <div class="card" style="width:100%;max-width:460px;padding:22px;margin-top:36px">
+      <div class="row between" style="margin-bottom:14px"><span id="loyTitle" style="font-size:17px;font-weight:800">Add program</span>
+        <button id="closeLoyalty" class="btn" style="padding:4px 10px">&times;</button></div>
+      <div class="label">Program *</div><input id="loyProgram" class="field" placeholder="e.g. Delta SkyMiles">
+      <div class="label">Whose account</div><select id="loyPerson" class="field"></select>
+      <div class="row" style="gap:10px">
+        <div style="flex:2"><div class="label">Balance</div><input id="loyBalance" type="number" step="1" class="field" placeholder="288345"></div>
+        <div style="flex:1"><div class="label">Unit</div><select id="loyUnit" class="field"><option value="points">points</option><option value="miles">miles</option></select></div>
+      </div>
+      <div class="label">Member ID</div><input id="loyMember" class="field" placeholder="optional">
+      <div class="label">Watch date (soft reminder)</div><input id="loyWatch" type="date" class="field">
+      <div class="label">Note</div><input id="loyNote" class="field" placeholder="optional">
+      <div class="row" style="gap:10px"><button id="loySave" class="primary" style="flex:1">Save</button>
+        <button id="loyDelete" class="btn hidden" style="color:var(--rust);padding:12px 16px">Delete</button></div>
+    </div>
+  </div>
+
   <!-- RECONCILE VIEW -->
   <div id="viewReconcile" class="hidden">
     <div class="card" style="padding:14px 18px;margin-bottom:14px">
@@ -800,7 +891,7 @@ function localDate(){
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(m){
   return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]; }); }
 
-var token=null, raw=[], accts=[], txns=[], rules=[], notes=[], policies=[], kids=[], snaps=[], docs=[], allocs=[], openSet={}, view="all", tab="envelopes", mtab="accounts", editing=false;
+var token=null, raw=[], accts=[], txns=[], rules=[], notes=[], policies=[], kids=[], snaps=[], docs=[], offers=[], credits=[], loyalty=[], allocs=[], openSet={}, view="all", tab="envelopes", mtab="accounts", editing=false;
 var splitRows=[];
 var balMode="available";
 
@@ -859,6 +950,7 @@ async function load(){
     await loadKids();
     await loadHistory();
     await loadDocs();
+    await loadPerks();
     draw();
   }catch(e){
     var el=$("loadErr");
@@ -1169,6 +1261,9 @@ function draw(){
   $("viewHistory").classList.add("hidden");
   $("viewDocuments").classList.add("hidden");
   $("viewReconcile").classList.add("hidden");
+  $("viewOffers").classList.add("hidden");
+  $("viewCredits").classList.add("hidden");
+  $("viewLoyalty").classList.add("hidden");
   if(tab==="envelopes"){ $("viewEnvelopes").classList.remove("hidden"); renderEnvelopes(); wireEnv(); }
   else if(tab==="txns"){ $("viewTxns").classList.remove("hidden"); renderTxns(); }
   else if(tab==="notes"){ $("viewNotes").classList.remove("hidden"); renderNotes(); }
@@ -1178,6 +1273,9 @@ function draw(){
   else if(tab==="history"){ $("viewHistory").classList.remove("hidden"); renderHistory(); }
   else if(tab==="documents"){ $("viewDocuments").classList.remove("hidden"); renderDocs(); }
   else if(tab==="reconcile"){ $("viewReconcile").classList.remove("hidden"); renderRecon(); }
+  else if(tab==="offers"){ $("viewOffers").classList.remove("hidden"); renderOffers(); }
+  else if(tab==="credits"){ $("viewCredits").classList.remove("hidden"); renderCredits(); }
+  else if(tab==="loyalty"){ $("viewLoyalty").classList.remove("hidden"); renderLoyalty(); }
   else { $("viewManage").classList.remove("hidden"); renderManage(); }
 }
 
@@ -2118,7 +2216,7 @@ async function saveNew(){
 
 
 /* ================= EXPORT / BACKUP ================= */
-var TABLES=["institutions","envelopes","accounts","holdings","transactions","claims","allocations","merchant_rules","snapshots","notes","insurance_policies","kids_accounts","documents","entity_snapshots"];
+var TABLES=["institutions","envelopes","accounts","holdings","transactions","claims","allocations","merchant_rules","snapshots","notes","insurance_policies","kids_accounts","documents","entity_snapshots","offers","credits","loyalty_balances"];
 
 var DDL = [
 "-- ============================================================",
@@ -2632,6 +2730,7 @@ async function savePolicy(){
     await loadKids();
     await loadHistory();
     await loadDocs();
+    await loadPerks();
     draw();
   }catch(e){ toast(e.message); }
   finally{ b.disabled=false; b.textContent="Save"; }
@@ -3215,6 +3314,275 @@ function renderRecon(){
   }
 }
 
+
+/* ================= PERKS: OFFERS / CREDITS / LOYALTY ================= */
+var PEOPLE=["Jared","Kayla","Andrew","Josiah","Aravis"];
+var showHiddenPerks=false;
+var editingOffer=null, editingCredit=null, editingLoyalty=null;
+
+function todayStr(){ return localDate(); }
+function isExpired(d){ return d && d < todayStr(); }
+function daysUntil(d){
+  if(!d) return null;
+  var ms=new Date(d+"T00:00:00").getTime()-new Date(todayStr()+"T00:00:00").getTime();
+  return Math.round(ms/86400000);
+}
+function expiryTag(d){
+  if(!d) return '';
+  var n=daysUntil(d);
+  if(n<0) return '<span class="tag" style="color:var(--slate);background:var(--slate-soft)">expired</span>';
+  if(n===0) return '<span class="tag" style="color:var(--rust);background:var(--rust-soft)">today</span>';
+  if(n<=7) return '<span class="tag" style="color:var(--rust);background:var(--rust-soft)">'+n+'d left</span>';
+  if(n<=30) return '<span class="tag" style="color:var(--gold);background:var(--gold-soft)">'+n+'d left</span>';
+  return '<span class="tag" style="color:var(--ink-soft);background:var(--paper)">'+esc(d)+'</span>';
+}
+
+async function loadPerks(){
+  try{
+    var r1=await fetch(SUPABASE_URL+"/rest/v1/offers?select=*&order=expires.asc",{headers:headers()});
+    offers = r1.ok ? await r1.json() : [];
+    var r2=await fetch(SUPABASE_URL+"/rest/v1/credits?select=*&order=expires.asc",{headers:headers()});
+    credits = r2.ok ? await r2.json() : [];
+    var r3=await fetch(SUPABASE_URL+"/rest/v1/loyalty_balances?select=*&order=program.asc",{headers:headers()});
+    loyalty = r3.ok ? await r3.json() : [];
+  }catch(e){ offers=[]; credits=[]; loyalty=[]; }
+}
+
+/* ---------- OFFERS ---------- */
+function renderOffers(){
+  var pool=offers.filter(function(o){ return showHiddenPerks || (!o.used && !isExpired(o.expires)); });
+  var hidden=offers.length-offers.filter(function(o){ return !o.used && !isExpired(o.expires); }).length;
+  $("offersBody").innerHTML=
+    '<div class="card" style="padding:14px 18px;margin-bottom:14px"><div class="row between wrapf" style="gap:12px">'+
+      '<div style="flex:1;min-width:220px;font-size:13px;line-height:1.6;color:var(--ink-soft)">Card-linked offers &mdash; small, frequent deals. Expired or used ones drop off automatically to keep this clean.</div>'+
+      '<div class="row wrapf" style="gap:8px">'+
+        (hidden>0?'<label class="row muted" style="gap:6px;font-size:12px"><input type="checkbox" id="offHidden" '+(showHiddenPerks?"checked":"")+'> show hidden ('+hidden+')</label>':'')+
+        '<button id="newOffer" class="btn" style="background:var(--teal);color:#fff;border-color:var(--teal);padding:10px 16px">+ Add offer</button>'+
+      '</div>'+
+    '</div></div>'+
+    (pool.length? '<section class="panel">'+
+      '<div class="panel-head"><span class="panel-title">Offers</span><span class="muted">'+pool.filter(function(o){return !o.used&&!isExpired(o.expires);}).length+' active</span></div>'+
+      pool.sort(function(a,b){ return (a.expires||"9999")<(b.expires||"9999")?-1:1; }).map(function(o){
+        var dim=o.used||isExpired(o.expires);
+        return '<div class="mrow" style="grid-template-columns:1fr auto auto;gap:10px;align-items:center'+(dim?';opacity:.5':'')+'">'+
+          '<span style="min-width:0"><span style="font-size:13.5px;font-weight:650">'+esc(o.merchant)+'</span>'+
+            (o.detail?' <span class="muted">'+esc(o.detail)+'</span>':'')+
+            (o.card?'<div class="muted">'+esc(o.card)+'</div>':'')+'</span>'+
+          expiryTag(o.expires)+
+          '<span class="row" style="gap:5px">'+
+            '<button class="btn offUse" data-id="'+esc(o.id)+'" style="padding:3px 9px;font-size:11px">'+(o.used?"used":"mark used")+'</button>'+
+            '<button class="btn offEdit" data-id="'+esc(o.id)+'" style="padding:3px 9px;font-size:11px">edit</button>'+
+          '</span>'+
+        '</div>';
+      }).join("")+'</section>'
+      : '<div class="card" style="padding:22px;color:var(--ink-soft);font-size:13.5px">No active offers. Add one, or check &ldquo;show hidden.&rdquo;</div>');
+
+  if($("offHidden")) $("offHidden").addEventListener("change",function(){ showHiddenPerks=this.checked; renderOffers(); });
+  $("newOffer").addEventListener("click",function(){ openOffer(null); });
+  document.querySelectorAll(".offEdit").forEach(function(b){ b.addEventListener("click",function(){ openOffer(this.getAttribute("data-id")); }); });
+  document.querySelectorAll(".offUse").forEach(function(b){ b.addEventListener("click",async function(){
+    var id=this.getAttribute("data-id"), cur=null;
+    for(var i=0;i<offers.length;i++) if(offers[i].id===id) cur=offers[i];
+    await patch("offers",id,{used:!cur.used},true);
+    cur.used=!cur.used; toast(cur.used?"Marked used":"Reopened"); renderOffers();
+  }); });
+}
+
+function openOffer(id){
+  editingOffer=null;
+  if(id) for(var i=0;i<offers.length;i++) if(offers[i].id===id) editingOffer=offers[i];
+  var o=editingOffer||{};
+  $("ofTitle").textContent=editingOffer?"Edit offer":"Add offer";
+  $("ofDelete").classList.toggle("hidden",!editingOffer);
+  $("ofMerchant").value=o.merchant||"";
+  $("ofDetail").value=o.detail||"";
+  $("ofCard").value=o.card||"";
+  $("ofExpires").value=o.expires||"";
+  $("offerModal").classList.remove("hidden");
+}
+function closeOffer(){ $("offerModal").classList.add("hidden"); }
+async function saveOffer(){
+  if(!$("ofMerchant").value.trim()) return toast("Merchant is required");
+  var b=$("ofSave"); b.disabled=true; b.textContent="Saving\u2026";
+  try{
+    var body={merchant:$("ofMerchant").value.trim(), detail:strOrNull("ofDetail"),
+      card:strOrNull("ofCard"), expires:$("ofExpires").value||null};
+    if(editingOffer) await patchFull("offers",editingOffer.id,body);
+    else await postRow("offers",body);
+    toast(editingOffer?"Updated":"Added"); closeOffer(); await loadPerks(); draw();
+  }catch(e){ toast(e.message); } finally{ b.disabled=false; b.textContent="Save"; }
+}
+async function deleteOffer(){
+  if(!editingOffer) return;
+  if(!confirm("Delete this offer?")) return;
+  await fetch(SUPABASE_URL+"/rest/v1/offers?id=eq."+editingOffer.id,{method:"DELETE",headers:headers({Prefer:"return=minimal"})});
+  toast("Deleted"); closeOffer(); await loadPerks(); draw();
+}
+
+/* ---------- CREDITS ---------- */
+function renderCredits(){
+  var pool=credits.filter(function(c){ return showHiddenPerks || (!c.used && !isExpired(c.expires)); });
+  var hidden=credits.length-credits.filter(function(c){ return !c.used && !isExpired(c.expires); }).length;
+  var activeTotal=0;
+  credits.forEach(function(c){ if(!c.used && !isExpired(c.expires)) activeTotal+=Number(c.amount||0); });
+  $("creditsBody").innerHTML=
+    '<div class="card" style="padding:14px 18px;margin-bottom:14px"><div class="row between wrapf" style="gap:12px">'+
+      '<div style="flex:1;min-width:220px;font-size:13px;line-height:1.6;color:var(--ink-soft)">Larger credits with hard expirations (airline, travel-portal). Some are tied to a person; others anyone can use. Expired or used ones drop off automatically.'+(activeTotal>0?' <b style="color:var(--ink)">'+fmt(activeTotal)+'</b> active.':'')+'</div>'+
+      '<div class="row wrapf" style="gap:8px">'+
+        (hidden>0?'<label class="row muted" style="gap:6px;font-size:12px"><input type="checkbox" id="crHidden" '+(showHiddenPerks?"checked":"")+'> show hidden ('+hidden+')</label>':'')+
+        '<button id="newCredit" class="btn" style="background:var(--teal);color:#fff;border-color:var(--teal);padding:10px 16px">+ Add credit</button>'+
+      '</div>'+
+    '</div></div>'+
+    (pool.length? '<section class="panel">'+
+      '<div class="panel-head"><span class="panel-title">Credits</span></div>'+
+      pool.sort(function(a,b){ return (a.expires||"9999")<(b.expires||"9999")?-1:1; }).map(function(c){
+        var dim=c.used||isExpired(c.expires);
+        return '<div class="mrow" style="grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center'+(dim?';opacity:.5':'')+'">'+
+          '<span class="num" style="font-weight:800;font-size:14px">'+(c.amount!=null?fmt(c.amount):"\u2014")+'</span>'+
+          '<span style="min-width:0"><span style="font-size:13.5px;font-weight:650">'+esc(c.name)+'</span>'+
+            (c.source?' <span class="muted">'+esc(c.source)+'</span>':'')+
+            '<div class="muted">'+(c.person?esc(c.person):"anyone can use")+(c.note?" \u00b7 "+esc(c.note):"")+'</div></span>'+
+          expiryTag(c.expires)+
+          '<span class="row" style="gap:5px">'+
+            '<button class="btn crUse" data-id="'+esc(c.id)+'" style="padding:3px 9px;font-size:11px">'+(c.used?"used":"mark used")+'</button>'+
+            '<button class="btn crEdit" data-id="'+esc(c.id)+'" style="padding:3px 9px;font-size:11px">edit</button>'+
+          '</span>'+
+        '</div>';
+      }).join("")+'</section>'
+      : '<div class="card" style="padding:22px;color:var(--ink-soft);font-size:13.5px">No active credits. Add one, or check &ldquo;show hidden.&rdquo;</div>');
+
+  if($("crHidden")) $("crHidden").addEventListener("change",function(){ showHiddenPerks=this.checked; renderCredits(); });
+  $("newCredit").addEventListener("click",function(){ openCredit(null); });
+  document.querySelectorAll(".crEdit").forEach(function(b){ b.addEventListener("click",function(){ openCredit(this.getAttribute("data-id")); }); });
+  document.querySelectorAll(".crUse").forEach(function(b){ b.addEventListener("click",async function(){
+    var id=this.getAttribute("data-id"), cur=null;
+    for(var i=0;i<credits.length;i++) if(credits[i].id===id) cur=credits[i];
+    await patch("credits",id,{used:!cur.used},true);
+    cur.used=!cur.used; toast(cur.used?"Marked used":"Reopened"); renderCredits();
+  }); });
+}
+
+function openCredit(id){
+  editingCredit=null;
+  if(id) for(var i=0;i<credits.length;i++) if(credits[i].id===id) editingCredit=credits[i];
+  var c=editingCredit||{};
+  $("crTitle").textContent=editingCredit?"Edit credit":"Add credit";
+  $("crDelete").classList.toggle("hidden",!editingCredit);
+  $("crName").value=c.name||"";
+  $("crAmount").value=c.amount!=null?c.amount:"";
+  $("crSource").value=c.source||"";
+  $("crPerson").innerHTML='<option value="">Anyone can use</option>'+PEOPLE.map(function(p){
+    return '<option'+(c.person===p?" selected":"")+'>'+p+'</option>'; }).join("");
+  $("crExpires").value=c.expires||"";
+  $("crNote").value=c.note||"";
+  $("creditModal").classList.remove("hidden");
+}
+function closeCredit(){ $("creditModal").classList.add("hidden"); }
+async function saveCredit(){
+  if(!$("crName").value.trim()) return toast("Name is required");
+  var b=$("crSave"); b.disabled=true; b.textContent="Saving\u2026";
+  try{
+    var body={name:$("crName").value.trim(), amount:numOrNull("crAmount"), source:strOrNull("crSource"),
+      person:$("crPerson").value||null, expires:$("crExpires").value||null, note:strOrNull("crNote")};
+    if(editingCredit) await patchFull("credits",editingCredit.id,body);
+    else await postRow("credits",body);
+    toast(editingCredit?"Updated":"Added"); closeCredit(); await loadPerks(); draw();
+  }catch(e){ toast(e.message); } finally{ b.disabled=false; b.textContent="Save"; }
+}
+async function deleteCredit(){
+  if(!editingCredit) return;
+  if(!confirm("Delete this credit?")) return;
+  await fetch(SUPABASE_URL+"/rest/v1/credits?id=eq."+editingCredit.id,{method:"DELETE",headers:headers({Prefer:"return=minimal"})});
+  toast("Deleted"); closeCredit(); await loadPerks(); draw();
+}
+
+/* ---------- LOYALTY ---------- */
+function renderLoyalty(){
+  var groups={};
+  loyalty.forEach(function(l){ var p=l.person||"Household"; (groups[p]=groups[p]||[]).push(l); });
+  var order=PEOPLE.concat(["Household"]);
+  var keys=Object.keys(groups).sort(function(a,b){
+    var ia=order.indexOf(a), ib=order.indexOf(b);
+    return (ia<0?99:ia)-(ib<0?99:ib);
+  });
+  $("loyaltyBody").innerHTML=
+    '<div class="card" style="padding:14px 18px;margin-bottom:14px"><div class="row between wrapf" style="gap:12px">'+
+      '<div style="flex:1;min-width:220px;font-size:13px;line-height:1.6;color:var(--ink-soft)">Points and miles balances. Update the number when it changes. A watch date is an optional soft reminder &mdash; these don&rsquo;t auto-hide, since activity usually extends them.</div>'+
+      '<button id="newLoyalty" class="btn" style="background:var(--teal);color:#fff;border-color:var(--teal);padding:10px 16px">+ Add program</button>'+
+    '</div></div>'+
+    (keys.length? keys.map(function(k){
+      return '<section class="panel" style="margin-bottom:12px">'+
+        '<div class="panel-head"><span class="panel-title">'+esc(k)+'</span><span class="muted">'+groups[k].length+'</span></div>'+
+        groups[k].sort(function(a,b){ return (a.program||"").localeCompare(b.program||""); }).map(function(l){
+          var watch = l.watch_date ? (isExpired(l.watch_date)
+              ? '<span class="tag" style="color:var(--rust);background:var(--rust-soft)">watch date passed</span>'
+              : expiryTag(l.watch_date)) : '';
+          return '<div class="mrow" style="grid-template-columns:1fr auto auto;gap:10px;align-items:center">'+
+            '<span style="min-width:0"><span style="font-size:13.5px;font-weight:650">'+esc(l.program)+'</span>'+
+              (l.member_id?' <span class="muted">'+esc(l.member_id)+'</span>':'')+
+              (l.note?'<div class="muted">'+esc(l.note)+'</div>':'')+'</span>'+
+            watch+
+            '<span class="row" style="gap:8px;align-items:center">'+
+              '<span class="num" style="font-weight:800;font-size:14.5px">'+(l.balance!=null?Number(l.balance).toLocaleString():"\u2014")+'</span>'+
+              '<span class="muted">'+esc(l.unit||"points")+'</span>'+
+              '<button class="btn loyEdit" data-id="'+esc(l.id)+'" style="padding:3px 9px;font-size:11px">edit</button>'+
+            '</span>'+
+          '</div>';
+        }).join("")+'</section>';
+    }).join("")
+      : '<div class="card" style="padding:22px;color:var(--ink-soft);font-size:13.5px">No programs yet. Add one to start tracking a balance.</div>');
+
+  $("newLoyalty").addEventListener("click",function(){ openLoyalty(null); });
+  document.querySelectorAll(".loyEdit").forEach(function(b){ b.addEventListener("click",function(){ openLoyalty(this.getAttribute("data-id")); }); });
+}
+
+function openLoyalty(id){
+  editingLoyalty=null;
+  if(id) for(var i=0;i<loyalty.length;i++) if(loyalty[i].id===id) editingLoyalty=loyalty[i];
+  var l=editingLoyalty||{};
+  $("loyTitle").textContent=editingLoyalty?"Edit program":"Add program";
+  $("loyDelete").classList.toggle("hidden",!editingLoyalty);
+  $("loyProgram").value=l.program||"";
+  $("loyPerson").innerHTML='<option value="">Household (shared)</option>'+PEOPLE.map(function(p){
+    return '<option'+(l.person===p?" selected":"")+'>'+p+'</option>'; }).join("");
+  $("loyBalance").value=l.balance!=null?l.balance:"";
+  $("loyUnit").value=l.unit||"points";
+  $("loyMember").value=l.member_id||"";
+  $("loyWatch").value=l.watch_date||"";
+  $("loyNote").value=l.note||"";
+  $("loyaltyModal").classList.remove("hidden");
+}
+function closeLoyalty(){ $("loyaltyModal").classList.add("hidden"); }
+async function saveLoyalty(){
+  if(!$("loyProgram").value.trim()) return toast("Program is required");
+  var b=$("loySave"); b.disabled=true; b.textContent="Saving\u2026";
+  try{
+    var body={program:$("loyProgram").value.trim(), person:$("loyPerson").value||null,
+      balance:numOrNull("loyBalance"), unit:$("loyUnit").value,
+      member_id:strOrNull("loyMember"), watch_date:$("loyWatch").value||null, note:strOrNull("loyNote"),
+      updated_at:new Date().toISOString()};
+    if(editingLoyalty) await patchFull("loyalty_balances",editingLoyalty.id,body);
+    else await postRow("loyalty_balances",body);
+    toast(editingLoyalty?"Updated":"Added"); closeLoyalty(); await loadPerks(); draw();
+  }catch(e){ toast(e.message); } finally{ b.disabled=false; b.textContent="Save"; }
+}
+async function deleteLoyalty(){
+  if(!editingLoyalty) return;
+  if(!confirm("Delete this program?")) return;
+  await fetch(SUPABASE_URL+"/rest/v1/loyalty_balances?id=eq."+editingLoyalty.id,{method:"DELETE",headers:headers({Prefer:"return=minimal"})});
+  toast("Deleted"); closeLoyalty(); await loadPerks(); draw();
+}
+
+/* small helpers reused by perks */
+async function postRow(table, body){
+  var r=await fetch(SUPABASE_URL+"/rest/v1/"+table,{method:"POST",headers:headers({Prefer:"return=minimal"}),body:JSON.stringify(body)});
+  if(!r.ok){ var e=await r.json(); throw new Error(e.message||"Save failed"); }
+}
+async function patchFull(table, id, body){
+  var r=await fetch(SUPABASE_URL+"/rest/v1/"+table+"?id=eq."+id,{method:"PATCH",headers:headers({Prefer:"return=minimal"}),body:JSON.stringify(body)});
+  if(!r.ok){ var e=await r.json(); throw new Error(e.message||"Save failed"); }
+}
+
 $("signin").addEventListener("click",signIn);
 $("refresh").addEventListener("click",load);
 $("signout").addEventListener("click",signOut);
@@ -3236,11 +3604,65 @@ for(var mc=0;mc<mchips.length;mc++) mchips[mc].addEventListener("click",function
   for(var k=0;k<mchips.length;k++) mchips[k].classList.remove("on");
   this.classList.add("on"); mtab=this.getAttribute("data-mtab"); draw(); });
 
-var tabs=document.querySelectorAll("[data-tab]");
-for(var t=0;t<tabs.length;t++) tabs[t].addEventListener("click",function(){
-  for(var k=0;k<tabs.length;k++) tabs[k].classList.remove("on");
-  this.classList.add("on"); tab=this.getAttribute("data-tab"); draw(); });
+// which parent menu each tab lives under (for reflecting active state)
+var TAB_MENU={ reconcile:"money", history:"money",
+  offers:"trackers", credits:"trackers", loyalty:"trackers", insurance:"trackers", kids:"trackers",
+  notes:"admin", manage:"admin", documents:"admin", export:"admin" };
 
+function setActiveTab(name){
+  tab=name;
+  // clear all tab + menu-item highlights
+  document.querySelectorAll("[data-tab]").forEach(function(el){ el.classList.remove("on"); });
+  // highlight the chosen item wherever it is
+  document.querySelectorAll('[data-tab="'+name+'"]').forEach(function(el){ el.classList.add("on"); });
+  // highlight the parent menu button if it's inside a menu
+  document.querySelectorAll(".menu-btn").forEach(function(b){ b.classList.remove("on"); });
+  var parent=TAB_MENU[name];
+  if(parent){
+    var pb=document.querySelector('.menu-btn[data-menu="'+parent+'"]');
+    if(pb) pb.classList.add("on");
+  }
+  closeMenus();
+  draw();
+}
+
+function closeMenus(){
+  document.querySelectorAll(".menu").forEach(function(m){ m.classList.remove("open"); });
+}
+
+// direct tabs + menu items
+document.querySelectorAll("[data-tab]").forEach(function(el){
+  el.addEventListener("click",function(e){
+    e.stopPropagation();
+    setActiveTab(this.getAttribute("data-tab"));
+  });
+});
+
+// menu open/close (click-to-open, works on touch + desktop)
+document.querySelectorAll(".menu-btn").forEach(function(btn){
+  btn.addEventListener("click",function(e){
+    e.stopPropagation();
+    var menu=this.parentNode;
+    var wasOpen=menu.classList.contains("open");
+    closeMenus();
+    if(!wasOpen) menu.classList.add("open");
+  });
+});
+// click anywhere else closes menus
+document.addEventListener("click",function(){ closeMenus(); });
+
+$("closeOffer").addEventListener("click",closeOffer);
+$("ofSave").addEventListener("click",saveOffer);
+$("ofDelete").addEventListener("click",deleteOffer);
+$("offerModal").addEventListener("click",function(e){ if(e.target===this) closeOffer(); });
+$("closeCredit").addEventListener("click",closeCredit);
+$("crSave").addEventListener("click",saveCredit);
+$("crDelete").addEventListener("click",deleteCredit);
+$("creditModal").addEventListener("click",function(e){ if(e.target===this) closeCredit(); });
+$("closeLoyalty").addEventListener("click",closeLoyalty);
+$("loySave").addEventListener("click",saveLoyalty);
+$("loyDelete").addEventListener("click",deleteLoyalty);
+$("loyaltyModal").addEventListener("click",function(e){ if(e.target===this) closeLoyalty(); });
 $("newKid").addEventListener("click",function(){ openKid(null); });
 $("closeKid").addEventListener("click",closeKid);
 $("kSave").addEventListener("click",saveKid);
