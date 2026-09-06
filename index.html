@@ -745,6 +745,7 @@
         <div style="flex:1"><div class="label">Unit</div><select id="loyUnit" class="field"><option value="points">points</option><option value="miles">miles</option></select></div>
       </div>
       <div class="label">Member ID</div><input id="loyMember" class="field" placeholder="optional">
+      <div class="label">Status level</div><input id="loyStatus" class="field" placeholder="e.g. Silver, Gold — optional">
       <div class="label">Watch date (soft reminder)</div><input id="loyWatch" type="date" class="field">
       <div class="label">Note</div><input id="loyNote" class="field" placeholder="optional">
       <div class="row" style="gap:10px"><button id="loySave" class="primary" style="flex:1">Save</button>
@@ -3514,12 +3515,17 @@ function renderLoyalty(){
       return '<section class="panel" style="margin-bottom:12px">'+
         '<div class="panel-head"><span class="panel-title">'+esc(k)+'</span><span class="muted">'+groups[k].length+'</span></div>'+
         groups[k].sort(function(a,b){ return (a.program||"").localeCompare(b.program||""); }).map(function(l){
-          var watch = l.watch_date ? (isExpired(l.watch_date)
-              ? '<span class="tag" style="color:var(--rust);background:var(--rust-soft)">watch date passed</span>'
-              : expiryTag(l.watch_date)) : '';
+          var watch='';
+          if(l.watch_date){
+            var n=daysUntil(l.watch_date);
+            var col = n<0 ? "var(--rust)" : (n<=30 ? "var(--gold)" : "var(--ink-soft)");
+            var tail = n<0 ? " (passed)" : (n<=60 ? " ("+n+"d)" : "");
+            watch='<span style="font-size:12px;font-weight:600;color:'+col+';white-space:nowrap">Watch: '+esc(l.watch_date)+tail+'</span>';
+          }
           return '<div class="mrow" style="grid-template-columns:1fr auto auto;gap:10px;align-items:center">'+
             '<span style="min-width:0"><span style="font-size:13.5px;font-weight:650">'+esc(l.program)+'</span>'+
               (l.member_id?' <span class="muted">'+esc(l.member_id)+'</span>':'')+
+              (l.status_level?' <span class="tag" style="color:var(--gold);background:var(--gold-soft)">'+esc(l.status_level)+'</span>':'')+
               (l.note?'<div class="muted">'+esc(l.note)+'</div>':'')+'</span>'+
             watch+
             '<span class="row" style="gap:8px;align-items:center">'+
@@ -3548,6 +3554,7 @@ function openLoyalty(id){
   $("loyBalance").value=l.balance!=null?l.balance:"";
   $("loyUnit").value=l.unit||"points";
   $("loyMember").value=l.member_id||"";
+  $("loyStatus").value=l.status_level||"";
   $("loyWatch").value=l.watch_date||"";
   $("loyNote").value=l.note||"";
   $("loyaltyModal").classList.remove("hidden");
@@ -3559,7 +3566,7 @@ async function saveLoyalty(){
   try{
     var body={program:$("loyProgram").value.trim(), person:$("loyPerson").value||null,
       balance:numOrNull("loyBalance"), unit:$("loyUnit").value,
-      member_id:strOrNull("loyMember"), watch_date:$("loyWatch").value||null, note:strOrNull("loyNote"),
+      member_id:strOrNull("loyMember"), status_level:strOrNull("loyStatus"), watch_date:$("loyWatch").value||null, note:strOrNull("loyNote"),
       updated_at:new Date().toISOString()};
     if(editingLoyalty) await patchFull("loyalty_balances",editingLoyalty.id,body);
     else await postRow("loyalty_balances",body);
