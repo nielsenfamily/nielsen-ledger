@@ -858,8 +858,8 @@ var SUPABASE_KEY = "sb_publishable_fVibzJZbwNWX-14EgTRIUw_xVArtTb7";
 
 var SELECT =
   "id,name,type,owner,category,target_amount,target_date,note,status," +
-  "holdings(id,amount,percent_of_account," +
-  "accounts(id,name,balance,is_locked,locked_until,institutions(name,color)))";
+  "holdings(id,amount,percent_of_account,updated_at," +
+  "accounts(id,name,active,balance,balance_as_of,is_locked,locked_until,institutions(name,color)))";
 var ACCT_SELECT =
   "id,name,last_four,owner,kind,is_locked,locked_until,balance,active,institutions(name,color)";
 
@@ -891,6 +891,11 @@ function localDate(){
 }
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(m){
   return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]; }); }
+var MON3=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function shortDate(s){ // "2026-07-24" -> "Jul 24 '26"; parsed by parts to avoid TZ shift
+  if(!s) return ""; var p=String(s).slice(0,10).split("-");
+  if(p.length<3) return ""; var m=+p[1];
+  if(!(m>=1&&m<=12)) return ""; return MON3[m-1]+" "+(+p[2])+" '"+p[0].slice(2); }
 
 var token=null, raw=[], accts=[], txns=[], rules=[], notes=[], policies=[], kids=[], snaps=[], docs=[], offers=[], credits=[], loyalty=[], allocs=[], openSet={}, view="all", tab="envelopes", mtab="accounts", editing=false;
 var splitRows=[];
@@ -1008,7 +1013,7 @@ async function saveAmount(hid, aid, isPct, value){
       }
     }
   }else{
-    var ok=await patch("holdings", hid, {amount:value});
+    var ok=await patch("holdings", hid, {amount:value, updated_at:new Date().toISOString()});
     if(ok) await fetch(SUPABASE_URL+"/rest/v1/snapshots",{
       method:"POST",headers:headers({Prefer:"return=minimal"}),
       body:JSON.stringify({holding_id:hid,amount:value,as_of:today})});
@@ -1019,7 +1024,10 @@ async function saveAmount(hid, aid, isPct, value){
 function compute(list){
   return list.filter(function(e){ return e.status!=="closed"; }).map(function(e){
     var total=0,liquid=0,locked=0,hasPct=false;
-    var places=(e.holdings||[]).map(function(h){
+    var places=(e.holdings||[]).filter(function(h){
+      // hide holdings that sit on an archived account (e.g. a matured CD)
+      return !h.accounts || h.accounts.active!==false;
+    }).map(function(h){
       var a=h.accounts||{}, isPct=h.percent_of_account!=null;
       if(isPct) hasPct=true;
       var value=isPct?((Number(a.balance)||0)*Number(h.percent_of_account))/100:Number(h.amount||0);
@@ -1029,7 +1037,8 @@ function compute(list){
         missing:isPct&&a.balance==null,acct:a.name||"(unknown)",
         inst:(a.institutions&&a.institutions.name)||"",
         color:(a.institutions&&a.institutions.color)||"#5A6B78",
-        locked:!!a.is_locked,bal:a.balance};
+        locked:!!a.is_locked,bal:a.balance,
+        upd:isPct?(a.balance_as_of||null):(h.updated_at?String(h.updated_at).slice(0,10):null)};
     }).sort(function(x,y){ return y.value-x.value; });
     var o={}; for(var k in e) o[k]=e[k];
     o.own=total;o.total=total;o.liquid=liquid;o.locked=locked;o.hasPct=hasPct;o.places=places;
@@ -1123,9 +1132,11 @@ function envHtml(e, depth){
         '<span class="place-name">'+esc(p.inst)+' \u00b7 '+esc(p.acct)+'</span>'+
         (p.locked?'<span class="tag" style="color:var(--slate);background:var(--slate-soft)">locked</span>':'')+
         (p.isPct?'<span class="tag pctEdit" data-hid="'+esc(p.hid)+'" data-pct="'+esc(p.pct)+'" style="color:var(--gold);background:var(--gold-soft);cursor:pointer" title="Click to edit this percentage">'+esc(p.pct)+'% \u270e</span>':'')+
-        '</span><span class="amt num" data-hid="'+esc(p.hid)+'" data-aid="'+esc(p.aid)+'" data-pct="'+(p.isPct?1:0)+
+        '</span><span class="row" style="gap:8px;align-items:baseline">'+
+        (p.upd?'<span class="muted" style="font-size:10.5px;white-space:nowrap" title="This account\u2019s value last updated '+esc(p.upd)+'">'+esc(shortDate(p.upd))+'</span>':'')+
+        '<span class="amt num" data-hid="'+esc(p.hid)+'" data-aid="'+esc(p.aid)+'" data-pct="'+(p.isPct?1:0)+
         '" data-val="'+(p.isPct?(p.bal==null?"":p.bal):p.value)+'" style="color:'+(p.missing?"var(--rust)":"var(--ink)")+'">'+
-        (p.missing?"set balance":fmt(p.value))+'</span></div>';
+        (p.missing?"set balance":fmt(p.value))+'</span></span></div>';
     }).join("");
   }
   h+='</div>';
