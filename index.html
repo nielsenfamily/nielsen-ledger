@@ -872,7 +872,9 @@ var TYPE_META = {
 };
 var CAT_ORDER = ["Daily","Reserves","Goals","Giving","Retirement","Long Term"];
 var OWNERS = ["Jared","Kayla","Joint"];
-var KINDS = ["savings","checking","credit_card","investment"];
+var KINDS = ["savings","checking","credit_card","brokerage","ira","retirement"];
+var KIND_LABEL = {savings:"Savings",checking:"Checking",credit_card:"Credit card",brokerage:"Brokerage",ira:"IRA",retirement:"Retirement"};
+function isRetireKind(k){ return k==="ira"||k==="retirement"; }
 var TYPES = ["flow","sinking","goal","floor","project"];
 
 function $(id){ return document.getElementById(id); }
@@ -1195,9 +1197,9 @@ function parentSel(e){
     }).join("")+'</select>';
 }
 
-function sel(val, opts, cls, attrs){
+function sel(val, opts, cls, attrs, labels){
   return '<select class="'+cls+'" '+attrs+'>'+opts.map(function(o){
-    var lbl=o.replace("_"," ");
+    var lbl=(labels&&labels[o])?labels[o]:o.replace("_"," ");
     return '<option value="'+esc(o)+'"'+(o===val?" selected":"")+'>'+esc(lbl)+'</option>';
   }).join("")+'</select>';
 }
@@ -1208,7 +1210,8 @@ function renderManage(){
     var byInst={};
     accts.filter(function(a){ return showArchived || a.active!==false; }).forEach(function(a){
       var n=(a.institutions&&a.institutions.name)||"Other";
-      if(!byInst[n]) byInst[n]=[]; byInst[n].push(a);
+      var key=isRetireKind(a.kind)?n+" \u00b7 Retirement":n;
+      if(!byInst[key]) byInst[key]=[]; byInst[key].push(a);
     });
     body.innerHTML=Object.keys(byInst).sort().map(function(inst){
       var color=(byInst[inst][0].institutions&&byInst[inst][0].institutions.color)||"#5A6B78";
@@ -1223,7 +1226,7 @@ function renderManage(){
             '<input class="mi" value="'+esc(a.name)+'" data-t="accounts" data-id="'+esc(a.id)+'" data-f="name">'+
             '<input class="mi" value="'+esc(a.last_four||"")+'" placeholder="&mdash;" data-t="accounts" data-id="'+esc(a.id)+'" data-f="last_four">'+
             sel(a.owner||"Joint",OWNERS,"mi",'data-t="accounts" data-id="'+esc(a.id)+'" data-f="owner"')+
-            sel(a.kind||"savings",KINDS,"mi",'data-t="accounts" data-id="'+esc(a.id)+'" data-f="kind"')+
+            sel(a.kind||"savings",KINDS,"mi",'data-t="accounts" data-id="'+esc(a.id)+'" data-f="kind"',KIND_LABEL)+
             '<input type="checkbox" '+(a.is_locked?"checked":"")+' data-t="accounts" data-id="'+esc(a.id)+'" data-f="is_locked" style="justify-self:center">'+
             (a.active===false
               ? '<button class="btn acctRestore" data-id="'+esc(a.id)+'" style="padding:3px 8px;font-size:10.5px">Restore</button>'
@@ -2155,7 +2158,7 @@ function openAdd(kind){
     $("aName").value=""; $("aLast").value=""; $("aBal").value="";
     $("aOwner").innerHTML=OWNERS.map(function(o){ return '<option>'+o+'</option>'; }).join("");
     $("aKind").innerHTML=KINDS.map(function(k){
-      return '<option value="'+k+'">'+k.replace("_"," ")+'</option>'; }).join("");
+      return '<option value="'+k+'">'+(KIND_LABEL[k]||k.replace("_"," "))+'</option>'; }).join("");
     $("aLocked").checked=false; $("aUntil").value="";
   }else{
     $("eName").value="";
@@ -3244,18 +3247,22 @@ function renderRecon(){
        .forEach(function(a){
     var inst=(a.institutions&&a.institutions.name)||"Other";
     var own=a.owner||"Joint";
-    var key=inst+" \u00b7 "+own;
-    if(!groups[key]) groups[key]={inst:inst, owner:own, label:inst+" \u00b7 "+own,
+    var retire=isRetireKind(a.kind);
+    var key=inst+" \u00b7 "+own+(retire?" \u00b7 R":"");
+    if(!groups[key]) groups[key]={inst:inst, owner:own, retire:retire,
+      label:inst+" \u00b7 "+own+(retire?" \u00b7 Retirement":""),
       color:(a.institutions&&a.institutions.color)||"#5A6B78", accounts:[]};
     groups[key].accounts.push(a);
   });
 
-  // sort: institution name first, then owner (Jared, Kayla, Joint)
+  // sort: institution name first, then owner (Jared, Kayla, Joint), retirement last within each
   var ownRank={Jared:0,Kayla:1,Joint:2};
   var names=Object.keys(groups).sort(function(a,b){
     var ga=groups[a], gb=groups[b];
     if(ga.inst!==gb.inst) return ga.inst.localeCompare(gb.inst);
-    return (ownRank[ga.owner]==null?9:ownRank[ga.owner])-(ownRank[gb.owner]==null?9:ownRank[gb.owner]);
+    var oa=(ownRank[ga.owner]==null?9:ownRank[ga.owner]), ob=(ownRank[gb.owner]==null?9:ownRank[gb.owner]);
+    if(oa!==ob) return oa-ob;
+    return (ga.retire?1:0)-(gb.retire?1:0);
   });
   var html=names.map(function(k){
     var g=groups[k];
