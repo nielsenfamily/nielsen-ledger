@@ -77,6 +77,13 @@
   input.field{width:100%;padding:10px 12px;font-size:16px;border-radius:9px;
     border:1px solid var(--line);margin-bottom:14px;background:var(--paper);
     color:var(--ink);font-family:inherit}
+  select.field, textarea.field{width:100%;padding:10px 12px;font-size:16px;border-radius:9px;
+    border:1px solid var(--line);margin-bottom:14px;background:var(--paper);color:var(--ink);font-family:inherit}
+  .rc-split{display:grid;grid-template-columns:1fr 104px 34px;gap:6px;align-items:center;margin-bottom:8px}
+  .rc-split .field{margin:0}
+  .rc-split .rc-note{grid-column:1 / 3;font-size:14px;padding:7px 10px}
+  .rc-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+  @media (max-width:560px){ .rc-grid{grid-template-columns:1fr} }
   .label{font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px}
   .primary{width:100%;padding:12px;border-radius:9px;border:none;background:var(--teal);
     color:#fff;font-weight:700;font-size:14.5px;cursor:pointer}
@@ -138,6 +145,7 @@
       <div class="menu">
         <button class="tab menu-btn" data-menu="money">Money <span style="font-size:9px">&#9660;</span></button>
         <div class="menu-pop" data-pop="money">
+          <button class="menu-item" data-tab="receipts">Receipts</button>
           <button class="menu-item" data-tab="reconcile">Reconcile</button>
           <button class="menu-item" data-tab="history">History</button>
         </div>
@@ -753,6 +761,9 @@
     </div>
   </div>
 
+  <!-- RECEIPTS VIEW (pre-reconciliation log) -->
+  <div id="viewReceipts" class="hidden"><div id="rcBody"></div></div>
+
   <!-- RECONCILE VIEW -->
   <div id="viewReconcile" class="hidden">
     <div class="card" style="padding:14px 18px;margin-bottom:14px">
@@ -899,7 +910,7 @@ function shortDate(s){ // "2026-07-24" -> "Jul 24 '26"; parsed by parts to avoid
   if(p.length<3) return ""; var m=+p[1];
   if(!(m>=1&&m<=12)) return ""; return MON3[m-1]+" "+(+p[2])+" '"+p[0].slice(2); }
 
-var token=null, raw=[], accts=[], txns=[], rules=[], notes=[], policies=[], kids=[], snaps=[], docs=[], offers=[], credits=[], loyalty=[], allocs=[], openSet={}, view="all", tab="envelopes", mtab="accounts", editing=false;
+var token=null, raw=[], accts=[], txns=[], rules=[], notes=[], policies=[], kids=[], snaps=[], docs=[], offers=[], credits=[], loyalty=[], allocs=[], receipts=[], rcMissing=false, openSet={}, view="all", tab="envelopes", mtab="accounts", editing=false;
 var splitRows=[];
 var balMode="available";
 
@@ -945,7 +956,7 @@ async function load(){
     var r2=await fetch(SUPABASE_URL+"/rest/v1/accounts?select="+encodeURIComponent(ACCT_SELECT)+"&order=name.asc",{headers:headers()});
     var d2=await r2.json();
     if(r2.ok) accts=d2;
-    var r3=await fetch(SUPABASE_URL+"/rest/v1/transactions?select=id,txn_date,merchant,amount,status,source,accounts(id,name,kind,institutions(name,color)),allocations(id,amount,kind,envelope_id,envelopes(name))&order=txn_date.desc&limit=100",{headers:headers()});
+    var r3=await fetch(SUPABASE_URL+"/rest/v1/transactions?select=id,txn_date,merchant,amount,status,source,note,accounts(id,name,kind,institutions(name,color)),allocations(id,amount,kind,envelope_id,envelopes(name))&order=txn_date.desc&limit=100",{headers:headers()});
     var d3=await r3.json();
     if(r3.ok) txns=d3; else txns=[];
     var r4=await fetch(SUPABASE_URL+"/rest/v1/merchant_rules?select=id,pattern,account_id,envelope_id,always_ask",{headers:headers()});
@@ -959,6 +970,7 @@ async function load(){
     await loadHistory();
     await loadDocs();
     await loadPerks();
+    await loadReceipts();
     draw();
   }catch(e){
     var el=$("loadErr");
@@ -1276,6 +1288,7 @@ function draw(){
   $("viewHistory").classList.add("hidden");
   $("viewDocuments").classList.add("hidden");
   $("viewReconcile").classList.add("hidden");
+  $("viewReceipts").classList.add("hidden");
   $("viewOffers").classList.add("hidden");
   $("viewCredits").classList.add("hidden");
   $("viewLoyalty").classList.add("hidden");
@@ -1287,6 +1300,7 @@ function draw(){
   else if(tab==="kids"){ $("viewKids").classList.remove("hidden"); renderKids(); }
   else if(tab==="history"){ $("viewHistory").classList.remove("hidden"); renderHistory(); }
   else if(tab==="documents"){ $("viewDocuments").classList.remove("hidden"); renderDocs(); }
+  else if(tab==="receipts"){ $("viewReceipts").classList.remove("hidden"); renderReceipts(); }
   else if(tab==="reconcile"){ $("viewReconcile").classList.remove("hidden"); renderRecon(); }
   else if(tab==="offers"){ $("viewOffers").classList.remove("hidden"); renderOffers(); }
   else if(tab==="credits"){ $("viewCredits").classList.remove("hidden"); renderCredits(); }
@@ -1451,7 +1465,8 @@ function renderTxns(){
     return '<div class="mrow txnRow" data-id="'+esc(t.id)+'" style="grid-template-columns:88px 1fr auto auto;gap:10px;cursor:pointer">'+
       '<span class="muted">'+esc(t.txn_date)+'</span>'+
       '<span style="min-width:0"><span style="font-size:13px;font-weight:650">'+esc(t.merchant)+'</span>'+
-        '<div class="muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(a.name||"")+(parts?" \u00b7 "+esc(parts):"")+'</div></span>'+
+        '<div class="muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(a.name||"")+(parts?" \u00b7 "+esc(parts):"")+'</div>'+
+        (t.note?'<div class="muted" style="color:var(--teal);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">\u270e '+esc(t.note)+'</div>':'')+'</span>'+
       '<span class="tag" style="color:'+col+';background:var(--paper)">'+esc(t.status)+'</span>'+
       '<span class="num" style="font-weight:700;font-size:13px">'+fmt(t.amount)+'</span></div>';
   }).join("") : '<div class="muted" style="padding:14px 16px">No transactions yet. Add one to see envelope impact.</div>';
@@ -1777,7 +1792,7 @@ function openImport(){
   $("iStep2").classList.add("hidden");
   $("iRows").innerHTML="";
   $("iSummary").textContent="";
-  imp={rows:[],cols:{},headers:[],acct:null,flip:false};
+  imp={rows:[],cols:{},headers:[],acct:null,flip:false,reject:{},rcUnfound:[]};
   $("importModal").classList.remove("hidden");
 }
 function closeImport(){ $("importModal").classList.add("hidden"); }
@@ -1833,17 +1848,22 @@ function buildRows(){
       dupe:dupe,
       settled: !!(cut && dateS <= cut),
       envelope: (rule && rule.envelope_id) ? rule.envelope_id : "",
-      ask: !!(rule && rule.ask)
+      ask: !!(rule && rule.ask),
+      ruleEnv: (rule && rule.envelope_id) ? rule.envelope_id : "",
+      ruleAsk: !!(rule && rule.ask)
     });
   });
+  if(!imp.reject) imp.reject={};
+  rcMatchImport();
   renderImportRows();
 }
 
 function renderImportRows(){
   var envOpts=raw.slice().sort(function(a,b){ return (a.name||"").localeCompare(b.name||""); });
   var optHtml=envOpts.map(function(e){ return '<option value="'+esc(e.id)+'">'+esc(e.name)+'</option>'; }).join("");
-  var inc=0,dup=0,need=0,hist=0,owe=0;
+  var inc=0,dup=0,need=0,hist=0,owe=0,rcN=0,rcFuzzy=0;
   imp.rows.forEach(function(r){
+    if(r.rc){ rcN++; if(r.rcAlerts&&r.rcAlerts.length) rcFuzzy++; }
     if(r.include){ inc++; if(r.settled) hist++; else owe+=Number(r.amount||0); }
     if(r.dupe) dup++;
     if(r.include && !r.settled && !r.envelope) need++;
@@ -1853,11 +1873,20 @@ function renderImportRows(){
     '<b>'+fmt(owe)+'</b> will show as unsettled \u00b7 '+
     '<b>'+dup+'</b> possible duplicate'+(dup===1?"":"s")+
     ' \u00b7 <b>'+need+'</b> need an envelope'+
+    (rcN?'<div style="margin-top:6px;font-size:12px;color:var(--ink)">\ud83e\uddfe <b>'+rcN+'</b> matched to purchases you logged on Receipts'+
+      (rcFuzzy?' \u00b7 <b style="color:var(--rust)">'+rcFuzzy+' not an exact match \u2014 check the rows marked \u201ccheck \u2248\u201d</b>':' \u00b7 all exact')+'</div>':'')+
+    ((imp.rcUnfound&&imp.rcUnfound.length)?'<div style="margin-top:6px;font-size:12px;background:var(--gold-soft);border-radius:8px;padding:7px 10px;color:var(--ink)">'+
+      '<b>'+imp.rcUnfound.length+'</b> purchase'+(imp.rcUnfound.length===1?'':'s')+' you logged for this card '+(imp.rcUnfound.length===1?'isn\u2019t':'aren\u2019t')+' in this file: '+
+      imp.rcUnfound.map(function(u){ return esc(u.merchant)+' '+fmt(u.amount)+' ('+esc(rcShort(u.txn_date))+')'; }).join(', ')+
+      '. Still pending at the bank, probably \u2014 they stay on Receipts for next time.</div>':'')+
     '<div style="margin-top:4px;font-size:11.5px;color:var(--ink-soft)">Tip: rows tagged <b style="color:var(--gold)">split later</b> often cover several envelopes '+
     '(Walmart, Amazon\u2026). Pick the closest envelope now, then split the transaction after import '+
     'by clicking it on the Transactions tab.</div>';
   $("iRows").innerHTML = imp.rows.map(function(r,i){
+    var fuzzy = r.rc && r.rcAlerts && r.rcAlerts.length;
     var flag = r.dupe ? '<span class="tag" style="color:var(--rust);background:var(--rust-soft)">dupe?</span>'
+             : r.rc ? (fuzzy ? '<span class="tag" style="color:var(--rust);background:var(--rust-soft)">check \u2248</span>'
+                             : '<span class="tag" style="color:var(--green);background:var(--green-soft)">receipt \u2713</span>')
              : (r.amount<0 ? '<span class="tag" style="color:var(--slate);background:var(--slate-soft)">credit</span>'
              : (r.settled ? '<span class="tag" style="color:var(--green);background:var(--green-soft)">history</span>'
              : (r.ask ? '<span class="tag" style="color:var(--gold);background:var(--gold-soft)">split later</span>' : '')));
@@ -1865,9 +1894,16 @@ function renderImportRows(){
       '<input type="checkbox" class="iInc" data-i="'+i+'" '+(r.include?"checked":"")+'>'+
       '<span class="muted">'+esc(r.date)+'</span>'+
       '<span style="min-width:0"><span style="font-size:12.5px;font-weight:600;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.merchant)+'</span>'+
-        (r.dupe?'<span class="muted">matches '+esc(r.dupe.merchant)+' on '+esc(r.dupe.txn_date)+'</span>':'')+'</span>'+
+        (r.dupe?'<span class="muted">matches '+esc(r.dupe.merchant)+' on '+esc(r.dupe.txn_date)+'</span>':'')+
+        (r.rc?'<span class="muted" style="display:block;color:var(--teal);white-space:normal">\ud83e\uddfe Logged: '+esc(r.rc.merchant)+' '+fmt(r.rc.amount)+' on '+esc(rcShort(r.rc.txn_date))+
+            (r.rc.description?' \u2014 '+esc(r.rc.description):'')+
+            (r.splits?'<br>Split: '+r.splits.map(function(sp){ return esc(rcEnvName(sp.envelope_id))+' '+fmt(sp.amount); }).join(' \u00b7 '):'')+
+            ' <a href="#" class="iRcNo" data-i="'+i+'" style="color:var(--rust);font-weight:600">not this</a></span>'+
+          (fuzzy?'<span class="muted" style="display:block;color:var(--rust);white-space:normal">\u26a0 '+esc(r.rcAlerts.join(' \u00b7 '))+'</span>':''):'')+
+        '</span>'+
       '<span class="num" style="font-size:12.5px;font-weight:700">'+fmt(r.amount)+'</span>'+
-      '<select class="mi iEnv" data-i="'+i+'" style="font-size:12px"><option value="">\u2014 envelope \u2014</option>'+optHtml+'</select>'+
+      (r.splits ? '<span style="font-size:12px;font-weight:650;color:var(--teal)">split \u00d7'+r.splits.length+'</span>'
+        : '<select class="mi iEnv" data-i="'+i+'" style="font-size:12px"><option value="">\u2014 envelope \u2014</option>'+optHtml+'</select>')+
       flag+'</div>';
   }).join("");
   var sels=$("iRows").querySelectorAll(".iEnv");
@@ -1876,6 +1912,12 @@ function renderImportRows(){
     sels[i].addEventListener("change",function(){
       imp.rows[+this.getAttribute("data-i")].envelope=this.value; renderImportRows(); });
   }
+  var nos=$("iRows").querySelectorAll(".iRcNo");
+  for(var n=0;n<nos.length;n++) nos[n].addEventListener("click",function(ev){
+    ev.preventDefault();
+    var r=imp.rows[+this.getAttribute("data-i")];
+    if(r&&r.rc){ imp.reject[rcRowKey(r)+"|"+r.rc.id]=true; rcMatchImport(); renderImportRows(); }
+  });
   var cbs=$("iRows").querySelectorAll(".iInc");
   for(var j=0;j<cbs.length;j++) cbs[j].addEventListener("change",function(){
     imp.rows[+this.getAttribute("data-i")].include=this.checked; renderImportRows(); });
@@ -1899,6 +1941,11 @@ async function runImport(){
   msg+="\u2022 "+active.length+" as UNSETTLED (will show as owed): "+fmt(owe)+"\n";
   if(hist.length) msg+="\u2022 "+hist.length+" as PAID HISTORY (no effect on balances)\n";
   if(noEnv) msg+="\u2022 "+noEnv+" of the unsettled have NO envelope yet — you can assign them later\n";
+  var rcRows=todo.filter(function(r){ return r.rc; });
+  if(rcRows.length){
+    var rcF=rcRows.filter(function(r){ return r.rcAlerts&&r.rcAlerts.length; }).length;
+    msg+="\u2022 "+rcRows.length+" linked to purchases you logged on Receipts"+(rcF?" ("+rcF+" not exact \u2014 you reviewed them?)":"")+"\n";
+  }
   msg+="\nThe "+fmt(owe)+" should roughly match this card's current unpaid balance. ";
   msg+="If it's much higher, cancel and set the \u201calready paid on or before\u201d date.\n\nImport now?";
   if(!confirm(msg)) return;
@@ -1912,7 +1959,7 @@ async function runImport(){
       var res=await fetch(SUPABASE_URL+"/rest/v1/transactions",{
         method:"POST",headers:headers({Prefer:"return=representation"}),
         body:JSON.stringify({account_id:imp.acct,txn_date:r.date,merchant:r.merchant,
-          amount:r.amount,
+          amount:r.amount, note: r.rc ? rcNoteFor(r.rc) : null,
           status: r.settled ? "settled" : (r.envelope?"categorized":"new"),
           settled_at: r.settled ? new Date().toISOString() : null,
           source:"import"})});
@@ -1920,12 +1967,21 @@ async function runImport(){
       if(!res.ok) continue;
       made++;
       lastImportIds.push(t[0].id);
-      if(r.envelope){
+      if(r.rc){
+        await patch("receipts", r.rc.id, {status:"matched", transaction_id:t[0].id, matched_at:new Date().toISOString()}, true);
+      }
+      if(r.splits){
+        for(var s2=0;s2<r.splits.length;s2++){
+          await fetch(SUPABASE_URL+"/rest/v1/allocations",{
+            method:"POST",headers:headers({Prefer:"return=minimal"}),
+            body:JSON.stringify({transaction_id:t[0].id,envelope_id:r.splits[s2].envelope_id,amount:r.splits[s2].amount,kind:"envelope"})});
+        }
+      }else if(r.envelope){
         await fetch(SUPABASE_URL+"/rest/v1/allocations",{
           method:"POST",headers:headers({Prefer:"return=minimal"}),
           body:JSON.stringify({transaction_id:t[0].id,envelope_id:r.envelope,amount:r.amount,kind:"envelope"})});
         var known=matchRule(r.merchant,imp.acct);
-        if(!known){
+        if(!known && !r.rc){
           var pat=simplify(r.merchant).split(" ").slice(0,2).join(" ");
           if(pat.length>2){
             await fetch(SUPABASE_URL+"/rest/v1/merchant_rules",{
@@ -2262,7 +2318,7 @@ var DDL = [
 "  institution_id uuid not null references institutions(id) on delete restrict,",
 "  name text not null,",
 "  owner text check (owner in ('Jared','Kayla','Joint')) default 'Joint',",
-"  kind text check (kind in ('savings','checking','credit_card','investment')) default 'savings',",
+"  kind text check (kind in ('savings','checking','credit_card','brokerage','ira','retirement')) default 'savings',",
 "  last_four text, is_locked boolean default false, locked_until date,",
 "  balance numeric(12,2), balance_as_of date,",
 "  active boolean default true, note text,",
@@ -2746,6 +2802,7 @@ async function savePolicy(){
     await loadHistory();
     await loadDocs();
     await loadPerks();
+    await loadReceipts();
     draw();
   }catch(e){ toast(e.message); }
   finally{ b.disabled=false; b.textContent="Save"; }
@@ -3218,6 +3275,472 @@ async function saveDocData(){
 }
 
 
+/* ================= RECEIPTS (pre-reconciliation log) ================= */
+// Purchases logged at the register, before the bank posts them. At CSV import,
+// each bank row is fuzzy-matched to an open receipt and inherits its envelope
+// split and description. Entirely optional: unlogged charges import as usual.
+var rcForm=null, rcShowMatched=false;
+
+async function loadReceipts(){
+  try{
+    var r=await fetch(SUPABASE_URL+"/rest/v1/receipts?select=*&order=txn_date.desc,created_at.desc&limit=300",{headers:headers()});
+    if(r.ok){ receipts=await r.json(); rcMissing=false; }
+    else { receipts=[]; rcMissing=true; }
+  }catch(e){ receipts=[]; }
+}
+
+// A matched receipt whose transaction was later deleted (e.g. Undo import) is open again.
+function rcIsOpen(r){ return r.status!=="matched" || !r.transaction_id; }
+function rcLastCard(){ try{ return localStorage.getItem("ledger_rc_card")||""; }catch(e){ return ""; } }
+function rcSetLastCard(v){ try{ localStorage.setItem("ledger_rc_card",v||""); }catch(e){} }
+function rcNum(v){ var n=parseFloat(String(v==null?"":v).replace(/[$,\s]/g,"")); return isNaN(n)?null:Math.round(n*100)/100; }
+function rcEnvName(id){ for(var i=0;i<raw.length;i++) if(raw[i].id===id) return raw[i].name; return "(envelope)"; }
+function rcAcctName(id){ for(var i=0;i<accts.length;i++) if(accts[i].id===id) return accts[i].name; return ""; }
+function rcDays(a,b){ return Math.round((new Date(a+"T00:00:00")-new Date(b+"T00:00:00"))/86400000); }
+function rcShort(d){ var p=String(d||"").split("-"); return p.length===3?(+p[1])+"/"+(+p[2]):String(d||""); }
+
+function rcBlankForm(){
+  return {id:null, account_id:rcLastCard(), txn_date:localDate(), merchant:"", amount:"", description:"",
+          splits:[{envelope_id:"",amount:"",note:""}]};
+}
+
+function rcEnvOptions(sel){
+  var live=raw.filter(function(e){ return e.status!=="closed" || e.id===sel; });
+  var g={}; live.forEach(function(e){ var o=e.owner||"Joint"; (g[o]=g[o]||[]).push(e); });
+  var order=["Jared","Kayla","Joint"].concat(Object.keys(g).filter(function(k){ return ["Jared","Kayla","Joint"].indexOf(k)<0; }));
+  return '<option value="">\u2014 envelope \u2014</option>'+order.filter(function(o){ return g[o]; }).map(function(o){
+    return '<optgroup label="'+esc(o)+'">'+g[o].sort(function(a,b){ return (a.name||"").localeCompare(b.name||""); }).map(function(e){
+      return '<option value="'+esc(e.id)+'"'+(e.id===sel?" selected":"")+'>'+esc(e.name)+'</option>'; }).join("")+'</optgroup>';
+  }).join("");
+}
+
+function rcCardOptions(sel){
+  var live=accts.filter(function(a){ return a.active!==false; });
+  var cards=live.filter(function(a){ return a.kind==="credit_card"; });
+  var other=live.filter(function(a){ return a.kind==="checking"||a.kind==="savings"; });
+  function o(a){ return '<option value="'+esc(a.id)+'"'+(a.id===sel?" selected":"")+'>'+esc(a.name)+
+    (a.last_four?" \u2026"+esc(a.last_four):"")+'</option>'; }
+  return '<option value="">\u2014 not sure which card \u2014</option>'+
+    '<optgroup label="Credit cards">'+cards.map(o).join("")+'</optgroup>'+
+    (other.length?'<optgroup label="Bank accounts">'+other.map(o).join("")+'</optgroup>':'');
+}
+
+// Turn the form's split lines into final {envelope_id, amount, note}; one blank amount takes the remainder.
+function rcResolveSplits(f){
+  var total=rcNum(f.amount);
+  var lines=f.splits.filter(function(s){ return s.envelope_id || rcNum(s.amount)!=null || (s.note||"").trim(); });
+  if(!lines.length) return {splits:[]};
+  var blanks=lines.filter(function(s){ return rcNum(s.amount)==null; });
+  if(blanks.length>1) return {error:"Leave at most one split amount blank \u2014 that line takes whatever is left."};
+  var sum=0; lines.forEach(function(s){ var n=rcNum(s.amount); if(n!=null) sum+=n; });
+  var out=lines.map(function(s){
+    var n=rcNum(s.amount); if(n==null) n=Math.round((total-sum)*100)/100;
+    return {envelope_id:s.envelope_id||null, amount:n, note:(s.note||"").trim()||null};
+  });
+  if(out.some(function(s){ return !s.envelope_id; })) return {error:"Each split line needs an envelope (or remove the line)."};
+  if(out.some(function(s){ return !(s.amount>0); })) return {error:"Split amounts must be more than zero."};
+  var tot=0; out.forEach(function(s){ tot+=s.amount; });
+  if(Math.abs(tot-total)>0.005) return {error:"Splits add up to "+fmt(tot)+" but the purchase is "+fmt(total)+"."};
+  return {splits:out};
+}
+
+function rcRemainText(){
+  var f=rcForm, total=rcNum(f.amount);
+  if(total==null) return "";
+  var sum=0, blanks=0;
+  f.splits.forEach(function(s){ var n=rcNum(s.amount); if(n==null){ if(s.envelope_id) blanks++; } else sum+=n; });
+  var left=Math.round((total-sum)*100)/100;
+  if(blanks===1 && left>0) return "Blank line gets "+fmt(left);
+  if(Math.abs(left)<0.005) return '<span style="color:var(--green)">Fully assigned \u2713</span>';
+  return left>0 ? fmt(left)+" not assigned yet" : '<span style="color:var(--rust)">Over by '+fmt(-left)+'</span>';
+}
+
+function renderReceipts(){
+  if(rcMissing){
+    $("rcBody").innerHTML='<div class="card" style="padding:18px 20px;font-size:13.5px;line-height:1.6">'+
+      '<b>Receipts needs its database table.</b> Run the SQL in <b>Receipts_Guide.md</b> in Supabase, then tap Refresh.</div>';
+    return;
+  }
+  if(!rcForm) rcForm=rcBlankForm();
+  var f=rcForm, today=localDate();
+  var open=receipts.filter(rcIsOpen), matched=receipts.filter(function(r){ return !rcIsOpen(r); });
+  var seen={}, merch=[];
+  receipts.forEach(function(r){ var k=(r.merchant||"").toLowerCase(); if(k&&!seen[k]){ seen[k]=1; merch.push(r.merchant); } });
+
+  var splitsHtml=f.splits.map(function(s,i){
+    return '<div class="rc-split">'+
+      '<select class="field rcSEnv" data-i="'+i+'">'+rcEnvOptions(s.envelope_id)+'</select>'+
+      '<input class="field rcSAmt" data-i="'+i+'" inputmode="decimal" placeholder="'+(f.splits.length>1?"amount":"all")+'" value="'+esc(s.amount)+'">'+
+      '<button class="btn rcSDel" data-i="'+i+'" title="Remove line" style="padding:6px 0">\u00d7</button>'+
+      '<input class="field rc-note rcSNote" data-i="'+i+'" placeholder="what was it? (optional)" value="'+esc(s.note||"")+'">'+
+    '</div>';
+  }).join("");
+
+  var form='<section class="card" style="padding:16px 18px;margin-bottom:14px">'+
+    '<div class="row between" style="margin-bottom:12px"><span style="font-size:16px;font-weight:800">'+(f.id?"Edit purchase":"Log a purchase")+'</span>'+
+      (f.id?'<span class="tag" style="color:var(--gold);background:var(--gold-soft)">editing</span>':'')+'</div>'+
+    rcScanBlock()+
+    '<div class="rc-grid">'+
+      '<div><div class="label">Card</div><select id="rcCard" class="field">'+rcCardOptions(f.account_id)+'</select></div>'+
+      '<div><div class="label">Date</div><input id="rcDate" type="date" class="field" value="'+esc(f.txn_date)+'"></div>'+
+      '<div><div class="label">Store / merchant</div><input id="rcMerch" class="field" list="rcMerchList" autocomplete="off" placeholder="Walmart" value="'+esc(f.merchant)+'"></div>'+
+      '<div><div class="label">Total charged</div><input id="rcAmt" class="field" inputmode="decimal" placeholder="0.00" value="'+esc(f.amount)+'"></div>'+
+    '</div>'+
+    '<datalist id="rcMerchList">'+merch.slice(0,60).map(function(m){ return '<option value="'+esc(m)+'">'; }).join("")+'</datalist>'+
+    '<div class="label">Brief description</div><input id="rcDesc" class="field" placeholder="e.g. groceries + school supplies" value="'+esc(f.description)+'">'+
+    '<div class="row between" style="margin-bottom:6px"><span class="label" style="margin:0">Envelopes</span><span id="rcRemain" class="muted"></span></div>'+
+    splitsHtml+
+    '<button id="rcAddSplit" class="btn" style="margin:2px 0 14px">+ Split into another envelope</button>'+
+    '<div id="rcErr" style="color:var(--rust);font-size:13px;font-weight:600;margin-bottom:8px"></div>'+
+    '<button id="rcSave" class="primary">'+(f.id?"Save changes":"Log purchase")+'</button>'+
+    (f.id?'<div class="row" style="gap:8px;margin-top:10px"><button id="rcCancel" class="btn" style="flex:1">Cancel</button>'+
+      '<button id="rcDel" class="btn" style="flex:1;color:var(--rust)">Delete</button></div>':'')+
+  '</section>';
+
+  function row(r, isOpen){
+    var age=rcDays(today, r.txn_date);
+    var chips=(r.splits||[]).map(function(s){
+      return '<span class="tag" style="color:var(--ink);background:var(--paper)">'+esc(rcEnvName(s.envelope_id))+' '+fmt(s.amount)+
+        (s.note?' <span class="muted">\u00b7 '+esc(s.note)+'</span>':'')+'</span>'; }).join(" ");
+    var flag = !isOpen ? '<span class="tag" style="color:var(--green);background:var(--green-soft)">imported \u2713</span>'
+      : (age>7 ? '<span class="tag" style="color:var(--rust);background:var(--rust-soft)">no bank match yet \u00b7 '+age+' days</span>'
+      : '<span class="tag" style="color:var(--gold);background:var(--gold-soft)">waiting for bank</span>');
+    return '<div class="mrow" style="grid-template-columns:1fr auto;gap:10px;align-items:start">'+
+      '<span style="min-width:0">'+
+        '<span style="font-size:13.5px;font-weight:700">'+esc(r.merchant)+'</span> '+
+        '<span class="muted">'+esc(rcShort(r.txn_date))+(r.account_id?' \u00b7 '+esc(rcAcctName(r.account_id)):' \u00b7 any card')+'</span>'+
+        (r.description?'<div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px">'+esc(r.description)+'</div>':'')+
+        '<div class="row wrapf" style="gap:5px;margin-top:5px">'+(chips||'<span class="muted">no envelope \u2014 import will use your merchant rules</span>')+'</div>'+
+        '<div style="margin-top:5px">'+flag+'</div>'+
+      '</span>'+
+      '<span style="text-align:right"><div class="num" style="font-weight:800;font-size:14px">'+fmt(r.amount)+'</div>'+
+        (isOpen?'<button class="btn rcEdit" data-id="'+esc(r.id)+'" style="margin-top:6px;padding:4px 10px;font-size:11.5px">Edit</button>':'')+
+      '</span></div>';
+  }
+
+  var openTotal=0; open.forEach(function(r){ openTotal+=Number(r.amount||0); });
+  var lists='<section class="panel" style="margin-bottom:12px">'+
+    '<div class="panel-head"><span class="panel-title">Waiting for the bank</span><span class="muted">'+open.length+
+      (open.length?' \u00b7 '+fmt(openTotal):'')+'</span></div>'+
+    (open.length?open.map(function(r){ return row(r,true); }).join("")
+      :'<div class="muted" style="padding:14px 16px">Nothing logged. Purchases you log here get matched automatically when you import that card\u2019s CSV.</div>')+
+  '</section>'+
+  (matched.length?'<section class="panel"><button id="rcTogMatched" class="panel-head" style="width:100%;border:none;cursor:pointer;background:none;font:inherit">'+
+      '<span class="panel-title">'+(rcShowMatched?"\u25be":"\u25b8")+' Matched &amp; imported</span><span class="muted">'+matched.length+'</span></button>'+
+      (rcShowMatched?matched.slice(0,25).map(function(r){ return row(r,false); }).join(""):'')+'</section>':'');
+
+  var intro='<div class="card" style="padding:12px 16px;margin-bottom:14px;font-size:12.5px;line-height:1.55;color:var(--ink-soft)">'+
+    'Log a purchase right after you make it \u2014 especially mixed carts (Walmart, Target, Costco). When you import that card\u2019s CSV, '+
+    'each bank charge is matched to what you logged and brings your envelope split and description with it. Optional: anything you don\u2019t log imports the usual way.</div>';
+
+  $("rcBody").innerHTML='<div style="max-width:720px">'+intro+form+lists+'</div>';
+  $("rcRemain").innerHTML=rcRemainText();
+  rcWire();
+}
+
+function rcWire(){
+  function bind(id,key){ $(id).addEventListener("input",function(){ rcForm[key]=this.value; if(key==="amount") $("rcRemain").innerHTML=rcRemainText(); });
+    $(id).addEventListener("change",function(){ rcForm[key]=this.value; }); }
+  bind("rcCard","account_id"); bind("rcDate","txn_date"); bind("rcMerch","merchant"); bind("rcAmt","amount"); bind("rcDesc","description");
+  function each(cls,key){ var els=document.querySelectorAll("."+cls);
+    for(var i=0;i<els.length;i++){ ["input","change"].forEach(function(ev){ els[i].addEventListener(ev,function(){
+      rcForm.splits[+this.getAttribute("data-i")][key]=this.value; $("rcRemain").innerHTML=rcRemainText(); }); }); } }
+  each("rcSEnv","envelope_id"); each("rcSAmt","amount"); each("rcSNote","note");
+  var dels=document.querySelectorAll(".rcSDel");
+  for(var d=0;d<dels.length;d++) dels[d].addEventListener("click",function(){
+    rcForm.splits.splice(+this.getAttribute("data-i"),1);
+    if(!rcForm.splits.length) rcForm.splits.push({envelope_id:"",amount:"",note:""});
+    renderReceipts(); });
+  $("rcAddSplit").addEventListener("click",function(){ rcForm.splits.push({envelope_id:"",amount:"",note:""}); renderReceipts(); });
+  $("rcSave").addEventListener("click",rcSave);
+  if($("rcScanFile")) $("rcScanFile").addEventListener("change",function(){ var fl=this.files&&this.files[0]; this.value=""; rcScanRun(fl); });
+  if($("rcCancel")) $("rcCancel").addEventListener("click",function(){ rcForm=rcBlankForm(); rcScan={}; renderReceipts(); });
+  if($("rcDel")) $("rcDel").addEventListener("click",rcDelete);
+  if($("rcTogMatched")) $("rcTogMatched").addEventListener("click",function(){ rcShowMatched=!rcShowMatched; renderReceipts(); });
+  var eds=document.querySelectorAll(".rcEdit");
+  for(var e=0;e<eds.length;e++) eds[e].addEventListener("click",function(){
+    var id=this.getAttribute("data-id"), r=null;
+    for(var k=0;k<receipts.length;k++) if(receipts[k].id===id) r=receipts[k];
+    if(!r) return;
+    rcForm={id:r.id, account_id:r.account_id||"", txn_date:r.txn_date, merchant:r.merchant||"", amount:String(r.amount),
+      description:r.description||"",
+      splits:(r.splits&&r.splits.length)?r.splits.map(function(s){ return {envelope_id:s.envelope_id||"",amount:String(s.amount),note:s.note||""}; })
+        :[{envelope_id:"",amount:"",note:""}]};
+    renderReceipts(); window.scrollTo(0,0);
+  });
+}
+
+async function rcSave(){
+  var f=rcForm, total=rcNum(f.amount);
+  function bad(m){ $("rcErr").textContent=m; }
+  if(!(f.merchant||"").trim()) return bad("Add the store or merchant.");
+  if(total==null||total<=0) return bad("Add the total charged.");
+  if(!f.txn_date) return bad("Add the date.");
+  var rs=rcResolveSplits(f); if(rs.error) return bad(rs.error);
+  var body={account_id:f.account_id||null, txn_date:f.txn_date, merchant:f.merchant.trim(), amount:total,
+    description:(f.description||"").trim()||null, splits:rs.splits};
+  var b=$("rcSave"); b.disabled=true; b.textContent="Saving\u2026";
+  try{
+    if(f.id) await patchFull("receipts",f.id,body);
+    else { body.status="open"; await postRow("receipts",body); }
+    rcSetLastCard(f.account_id);
+    toast(f.id?"Updated":"Logged");
+    rcForm=rcBlankForm(); rcScan={};
+    await loadReceipts(); draw();
+  }catch(e){ bad(e.message); b.disabled=false; b.textContent=f.id?"Save changes":"Log purchase"; }
+}
+
+async function rcDelete(){
+  if(!rcForm||!rcForm.id) return;
+  if(!confirm("Delete this logged purchase?")) return;
+  await fetch(SUPABASE_URL+"/rest/v1/receipts?id=eq."+rcForm.id,{method:"DELETE",headers:headers({Prefer:"return=minimal"})});
+  rcForm=rcBlankForm(); rcScan={}; toast("Deleted"); await loadReceipts(); draw();
+}
+
+/* ---- optional receipt scan (Tesseract.js, runs on this device; photo is never saved) ---- */
+var rcScan={}, rcTessP=null;
+var RC_TESS_URL="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+var RC_STORES=[["walmart","Walmart"],["sams club","Sam's Club"],["target","Target"],["costco","Costco"],["kroger","Kroger"],
+  ["h e b","H-E-B"],["heb","H-E-B"],["tom thumb","Tom Thumb"],["aldi","Aldi"],["sprouts","Sprouts"],["whole foods","Whole Foods"],
+  ["trader joe","Trader Joe's"],["home depot","Home Depot"],["lowes","Lowe's"],["cvs","CVS"],["walgreens","Walgreens"],
+  ["dollar tree","Dollar Tree"],["dollar general","Dollar General"],["academy","Academy"],["best buy","Best Buy"],
+  ["hobby lobby","Hobby Lobby"],["michaels","Michaels"],["petsmart","PetSmart"],["chick fil a","Chick-fil-A"],
+  ["mcdonald","McDonald's"],["starbucks","Starbucks"],["braums","Braum's"],["buc ee","Buc-ee's"],["racetrac","RaceTrac"],
+  ["quiktrip","QuikTrip"],["shell","Shell"],["exxon","Exxon"],["chevron","Chevron"],["7 eleven","7-Eleven"],
+  ["ikea","IKEA"],["marshalls","Marshalls"],["tj maxx","TJ Maxx"],["old navy","Old Navy"],["kohls","Kohl's"],["ross","Ross"],
+  ["fiesta","Fiesta"],["albertsons","Albertsons"],["market street","Market Street"],["central market","Central Market"]];
+
+function rcLoadTesseract(){
+  if(window.Tesseract) return Promise.resolve();
+  if(rcTessP) return rcTessP;
+  rcTessP=new Promise(function(res,rej){
+    var sc=document.createElement("script"); sc.src=RC_TESS_URL; sc.onload=res;
+    sc.onerror=function(){ rcTessP=null; rej(new Error("Couldn\u2019t load the scanner \u2014 check your connection and try again.")); };
+    document.head.appendChild(sc);
+  });
+  return rcTessP;
+}
+
+// Shrink, grayscale and boost contrast in memory; nothing is written anywhere.
+function rcPrepImage(file){
+  return new Promise(function(res,rej){
+    var url=URL.createObjectURL(file), img=new Image();
+    img.onload=function(){
+      var k=Math.min(1,1800/Math.max(img.width,img.height));
+      var c=document.createElement("canvas"); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k);
+      var x=c.getContext("2d"); x.drawImage(img,0,0,c.width,c.height);
+      var d=x.getImageData(0,0,c.width,c.height), p=d.data;
+      for(var i=0;i<p.length;i+=4){ var g=(0.299*p[i]+0.587*p[i+1]+0.114*p[i+2]-128)*1.35+128;
+        g=g<0?0:(g>255?255:g); p[i]=p[i+1]=p[i+2]=g; }
+      x.putImageData(d,0,0); URL.revokeObjectURL(url); res(c);
+    };
+    img.onerror=function(){ URL.revokeObjectURL(url); rej(new Error("Couldn\u2019t open that image.")); };
+    img.src=url;
+  });
+}
+
+function rcMoney(line){
+  var out=[], re=/\$?\s?(\d{1,5})\s?[.,]\s?(\d{2})(?![\d])/g, m;
+  while((m=re.exec(line))) out.push(Number(m[1]+"."+m[2]));
+  return out;
+}
+
+// Pull store, date, total and priced item lines out of OCR text. Everything is a suggestion.
+function rcParseReceipt(text){
+  var lines=String(text||"").split(/\n/).map(function(l){ return l.replace(/\s+/g," ").trim(); }).filter(Boolean);
+  var simp=simplify(text), compact=simp.replace(/ /g,""), padded=" "+simp+" ";
+  var out={merchant:null,date:null,total:null,totalFrom:null,itemLines:[]};
+
+  // store: places you've logged before, then well-known stores, then the top line
+  var prev={}; receipts.forEach(function(r){ if(r.merchant) prev[simplify(r.merchant)]=r.merchant; });
+  Object.keys(prev).sort(function(a,b){ return b.length-a.length; }).some(function(k){
+    var c=k.replace(/ /g,""); if(c.length>=4 && compact.indexOf(c)>=0){ out.merchant=prev[k]; return true; } return false; });
+  if(!out.merchant) RC_STORES.some(function(s){
+    var hit=s[0].length>=5 ? compact.indexOf(s[0].replace(/ /g,""))>=0 : padded.indexOf(" "+s[0]+" ")>=0;
+    if(hit){ out.merchant=s[1]; return true; } return false; });
+  if(!out.merchant) lines.slice(0,5).some(function(l){
+    var letters=(l.match(/[A-Za-z]/g)||[]).length;
+    if(letters>=4 && letters/l.length>0.6 && !/receipt|welcome|thank|store|www|http/i.test(l)){
+      out.merchant=l.toLowerCase().replace(/\b[a-z]/g,function(c){ return c.toUpperCase(); }).slice(0,40); return true; }
+    return false; });
+
+  // date: first plausible one within the last 90 days
+  var today=localDate(), lo=new Date(today+"T00:00:00"); lo.setDate(lo.getDate()-90);
+  var loS=lo.getFullYear()+"-"+("0"+(lo.getMonth()+1)).slice(-2)+"-"+("0"+lo.getDate()).slice(-2);
+  var MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+  var cands=[], re1=/\b(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})\b/g, re2=/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2}),?\s+(\d{4})\b/gi, m;
+  while((m=re1.exec(text))) cands.push([+m[1],+m[2],m[3].length===2?2000+(+m[3]):+m[3]]);
+  while((m=re2.exec(text))) cands.push([MON[m[1].toLowerCase()],+m[2],+m[3]]);
+  cands.some(function(c){
+    if(!(c[0]>=1&&c[0]<=12&&c[1]>=1&&c[1]<=31)) return false;
+    var d=c[2]+"-"+("0"+c[0]).slice(-2)+"-"+("0"+c[1]).slice(-2);
+    if(d>=loS && d<=today){ out.date=d; return true; } return false; });
+
+  // total: TOTAL line, else the card/tender line, else subtotal, else the largest amount
+  var totals=[], tenders=[], sub=null, all=[];
+  lines.forEach(function(l){
+    var L=l.toLowerCase(), amts=rcMoney(l); if(!amts.length) return;
+    var v=amts[amts.length-1]; if(v>20000) return;
+    var skip=/change|cash|saving|you saved|discount|points|reward|balance remaining/.test(L);
+    if(!skip) all.push(v);
+    if(/sub\s*-?\s*tot/.test(L)){ sub=v; return; }
+    if(/tax/.test(L) && !/total/.test(L)) return;
+    if(/\btotal\b|amount due|amt due|balance due|total due/.test(L) && !skip && !/tax|items/.test(L)){ totals.push(v); return; }
+    if(/\b(visa|mastercard|master card|amex|american express|discover|debit|credit|card|tend|tender|charge|purchase)\b/.test(L) && !skip){ tenders.push(v); return; }
+    if(!skip && /[A-Za-z]{2,}/.test(l)) out.itemLines.push({text:l.replace(/\$?\s?\d{1,5}\s?[.,]\s?\d{2}[^\d]*$/,"").replace(/\b\d{8,}\b/g,"").replace(/\s+/g," ").trim()||l, amount:v});
+  });
+  function max(a){ return a.reduce(function(x,y){ return y>x?y:x; },0); }
+  if(totals.length){ out.total=max(totals); out.totalFrom="TOTAL line"; }
+  else if(tenders.length){ out.total=max(tenders); out.totalFrom="card line"; }
+  else if(sub!=null){ out.total=sub; out.totalFrom="subtotal \u2014 tax may be missing"; }
+  else if(all.length){ out.total=max(all); out.totalFrom="largest amount \u2014 a guess"; }
+  out.itemLines=out.itemLines.slice(0,40);
+  return out;
+}
+
+function rcScanPaint(){ var el=$("rcScanStatus"); if(el) el.textContent=rcScan.msg||""; }
+
+async function rcScanRun(file){
+  if(!file) return;
+  rcScan={busy:true,msg:"Loading scanner\u2026 (first time takes a moment)"};
+  renderReceipts();
+  var canvas=null;
+  try{
+    await rcLoadTesseract();
+    rcScan.msg="Preparing image\u2026"; rcScanPaint();
+    canvas=await rcPrepImage(file);
+    var res=await window.Tesseract.recognize(canvas,"eng",{logger:function(m){
+      if(m.status==="recognizing text") rcScan.msg="Reading receipt\u2026 "+Math.round((m.progress||0)*100)+"%";
+      else if(m.status) rcScan.msg=m.status.charAt(0).toUpperCase()+m.status.slice(1)+"\u2026";
+      rcScanPaint(); }});
+    var found=rcParseReceipt((res&&res.data&&res.data.text)||"");
+    // fill only fields you haven't typed yet
+    var filled=[];
+    if(found.merchant && !(rcForm.merchant||"").trim()){ rcForm.merchant=found.merchant; filled.push("store"); }
+    if(found.total!=null && rcNum(rcForm.amount)==null){ rcForm.amount=found.total.toFixed(2); filled.push("total"); }
+    if(found.date && found.date!==rcForm.txn_date && (!rcForm.txn_date || rcForm.txn_date===localDate())){ rcForm.txn_date=found.date; filled.push("date"); }
+    rcScan={busy:false, found:found, filled:filled};
+  }catch(e){ rcScan={busy:false, err:(e&&e.message)||"Scan failed."}; }
+  finally{ if(canvas){ canvas.width=0; canvas.height=0; } }   // drop the pixels
+  renderReceipts();
+}
+
+function rcScanBlock(){
+  var s=rcScan||{}, f=s.found, h='';
+  h+='<div style="background:var(--paper);border-radius:10px;padding:10px 12px;margin-bottom:14px">';
+  h+='<div class="row wrapf" style="gap:10px;align-items:center">'+
+    '<label class="btn" style="cursor:pointer;'+(s.busy?'opacity:.5;pointer-events:none':'')+'">\ud83d\udcf7 Scan receipt'+
+      '<input id="rcScanFile" type="file" accept="image/*" style="display:none"></label>'+
+    '<span class="muted">optional \u00b7 read on this device; the photo isn\u2019t saved or uploaded</span></div>';
+  if(s.busy) h+='<div id="rcScanStatus" style="margin-top:8px;font-size:12.5px;font-weight:600;color:var(--teal)">'+esc(s.msg||"")+'</div>';
+  if(s.err) h+='<div style="margin-top:8px;font-size:12.5px;color:var(--rust)">'+esc(s.err)+' You can still type it in.</div>';
+  if(f){
+    var bits=[];
+    bits.push('store: <b>'+(f.merchant?esc(f.merchant):'not found')+'</b>');
+    bits.push('date: <b>'+(f.date?esc(rcShort(f.date)):'not found')+'</b>');
+    bits.push('total: <b>'+(f.total!=null?fmt(f.total):'not found')+'</b>'+(f.totalFrom?' <span class="muted">('+esc(f.totalFrom)+')</span>':''));
+    h+='<div style="margin-top:8px;font-size:12.5px;line-height:1.6">Scan read '+bits.join(' \u00b7 ')+'</div>';
+    h+='<div style="font-size:12px;margin-top:2px;color:'+(s.filled&&s.filled.length?'var(--gold)':'var(--ink-soft)')+';font-weight:600">'+
+      (s.filled&&s.filled.length?'Filled in '+s.filled.join(', ')+' \u2014 check before saving.':'Nothing filled in \u2014 your typed values were kept.')+'</div>';
+    if(f.itemLines.length) h+='<details style="margin-top:6px"><summary class="muted" style="cursor:pointer">Items it could read ('+f.itemLines.length+') \u2014 handy for splitting</summary>'+
+      '<div style="margin-top:6px;max-height:220px;overflow-y:auto">'+f.itemLines.map(function(it){
+        return '<div class="row between" style="font-size:12px;padding:2px 0;border-bottom:1px solid var(--line);gap:10px"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+
+          esc(it.text)+'</span><span class="num">'+fmt(it.amount)+'</span></div>'; }).join("")+'</div></details>';
+  }
+  return h+'</div>';
+}
+
+/* ---- matching bank CSV rows to logged receipts ---- */
+function rcMerchKey(s){
+  return simplify(s).replace(/\bamzn\b/g,"amazon").replace(/\bwm supercenter\b/g,"walmart")
+    .replace(/[0-9]/g," ").replace(/\s+/g," ").trim();
+}
+function rcMerchSim(bank, mine){
+  var a=rcMerchKey(bank), b=rcMerchKey(mine);
+  if(!a||!b) return false;
+  var ac=a.replace(/ /g,""), bc=b.replace(/ /g,"");
+  var k=Math.min(5,ac.length,bc.length);
+  if(k>=3 && (ac.indexOf(bc.slice(0,k))>=0 || bc.indexOf(ac.slice(0,k))>=0)) return true;
+  var aw=a.split(" "), bw=b.split(" ");
+  for(var i=0;i<bw.length;i++) if(bw[i].length>=4 && aw.indexOf(bw[i])>=0) return true;
+  return false;
+}
+// Can this bank row be that logged purchase? Returns null, or a scored candidate with its alerts.
+function rcCandidate(row, rc, acctId){
+  if(rc.account_id && rc.account_id!==acctId) return null;
+  var days=rcDays(row.date, rc.txn_date);              // + means the bank dated it later
+  if(days<-2 || days>6) return null;
+  var want=Number(rc.amount), ad=Math.round(Math.abs(row.amount-want)*100)/100;
+  var sim=rcMerchSim(row.merchant, rc.merchant);
+  var tight=ad<=Math.max(1, want*0.02);                 // pennies / rounding
+  var loose=sim && ad<=want*0.30;                       // tips, pending holds, same store
+  if(!(tight||loose)) return null;
+  if(!sim && ad>=0.005) return null;                    // different name AND different amount: too weak
+  var alerts=[];
+  if(ad>=0.005) alerts.push("bank amount "+(row.amount>want?"+":"\u2212")+fmt(ad)+" vs logged "+fmt(want));
+  if(days!==0) alerts.push("bank date "+Math.abs(days)+" day"+(Math.abs(days)===1?"":"s")+(days>0?" later":" earlier"));
+  if(!sim) alerts.push("merchant name looks different (\u201c"+rc.merchant+"\u201d)");
+  // lower is better: a same-store match always outranks a different-store one
+  return {rc:rc, alerts:alerts, score:(sim?0:20)+(want>0?ad/want*20:ad)+Math.abs(days)};
+}
+function rcRowKey(r){ return r.date+"|"+r.merchant+"|"+r.amount; }
+
+// Copy the receipt's split onto a bank row; any amount difference lands on the largest line.
+function rcApply(row, rc, alerts){
+  row.rc=rc; row.rcAlerts=alerts;
+  var sp=(rc.splits||[]).map(function(s){ return {envelope_id:s.envelope_id, amount:Number(s.amount), note:s.note||null}; });
+  if(!sp.length) return;                                // description only; envelope stays from rules
+  var diff=Math.round((row.amount-Number(rc.amount))*100)/100;
+  if(Math.abs(diff)>=0.005){
+    var big=0; for(var k=1;k<sp.length;k++) if(sp[k].amount>sp[big].amount) big=k;
+    sp[big].amount=Math.round((sp[big].amount+diff)*100)/100;
+    if(sp[big].amount<=0){                              // rare: fall back to proportional
+      var f=row.amount/Number(rc.amount), tot=0;
+      sp=(rc.splits||[]).map(function(s){ var a=Math.round(Number(s.amount)*f*100)/100; tot+=a; return {envelope_id:s.envelope_id,amount:a,note:s.note||null}; });
+      sp[0].amount=Math.round((sp[0].amount+row.amount-tot)*100)/100;
+    }
+  }
+  if(sp.length===1){ row.envelope=sp[0].envelope_id; row.splits=null; }
+  else { row.envelope="__split"; row.splits=sp; }
+  row.ask=false;
+}
+
+function rcMatchImport(){
+  var acctId=imp.acct, pool=receipts.filter(rcIsOpen);
+  imp.rows.forEach(function(r){
+    if(r.rc){ r.envelope=r.ruleEnv||""; r.ask=!!r.ruleAsk; }
+    r.rc=null; r.rcAlerts=null; r.splits=null;
+  });
+  var pairs=[];
+  imp.rows.forEach(function(r,i){
+    if(!(r.amount>0) || r.dupe) return;
+    pool.forEach(function(rc){
+      if(imp.reject[rcRowKey(r)+"|"+rc.id]) return;
+      var c=rcCandidate(r,rc,acctId); if(c){ c.i=i; pairs.push(c); }
+    });
+  });
+  pairs.sort(function(a,b){ return a.score-b.score; });   // best pairs claim first, one-to-one
+  var usedRow={}, usedRc={};
+  pairs.forEach(function(p){
+    if(usedRow[p.i]||usedRc[p.rc.id]) return;
+    usedRow[p.i]=1; usedRc[p.rc.id]=1;
+    rcApply(imp.rows[p.i], p.rc, p.alerts);
+  });
+  // purchases logged on THIS card, dated within the file, that the file doesn't contain
+  var dates=imp.rows.map(function(r){ return r.date; }).sort();
+  var lo=dates[0], hi=dates[dates.length-1];
+  imp.rcUnfound = (lo ? pool.filter(function(rc){
+    return !usedRc[rc.id] && rc.account_id===acctId && rc.txn_date>=lo && rc.txn_date<=hi;
+  }) : []);
+}
+
+function rcNoteFor(rc){
+  var parts=[]; if(rc.description) parts.push(rc.description);
+  (rc.splits||[]).forEach(function(s){ if(s.note) parts.push(rcEnvName(s.envelope_id)+": "+s.note); });
+  return parts.join(" \u00b7 ").slice(0,400) || null;
+}
+
+
 /* ================= RECONCILE (balances by bank) ================= */
 var reconInput={};  // account_id -> typed actual balance (session only)
 
@@ -3630,7 +4153,7 @@ for(var mc=0;mc<mchips.length;mc++) mchips[mc].addEventListener("click",function
   this.classList.add("on"); mtab=this.getAttribute("data-mtab"); draw(); });
 
 // which parent menu each tab lives under (for reflecting active state)
-var TAB_MENU={ reconcile:"money", history:"money",
+var TAB_MENU={ receipts:"money", reconcile:"money", history:"money",
   offers:"trackers", credits:"trackers", loyalty:"trackers", insurance:"trackers", kids:"trackers",
   notes:"admin", manage:"admin", documents:"admin", export:"admin" };
 
