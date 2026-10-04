@@ -146,7 +146,7 @@
         <button class="tab menu-btn" data-menu="money">Money <span style="font-size:9px">&#9660;</span></button>
         <div class="menu-pop" data-pop="money">
           <button class="menu-item" data-tab="receipts">Receipts</button>
-          <button class="menu-item" data-tab="reconcile">Reconcile</button>
+          <button class="menu-item" data-tab="reconcile">Balances</button>
           <button class="menu-item" data-tab="history">History</button>
         </div>
       </div>
@@ -3300,7 +3300,7 @@ function rcDays(a,b){ return Math.round((new Date(a+"T00:00:00")-new Date(b+"T00
 function rcShort(d){ var p=String(d||"").split("-"); return p.length===3?(+p[1])+"/"+(+p[2]):String(d||""); }
 
 function rcBlankForm(){
-  return {id:null, account_id:rcLastCard(), txn_date:localDate(), merchant:"", amount:"", description:"",
+  return {id:null, account_id:rcLastCard(), txn_date:localDate(), merchant:"", amount:"", description:"", credit:false,
           splits:[{envelope_id:"",amount:"",note:""}]};
 }
 
@@ -3327,14 +3327,14 @@ function rcCardOptions(sel){
 
 // Turn the form's split lines into final {envelope_id, amount, note}; one blank amount takes the remainder.
 function rcResolveSplits(f){
-  var total=rcNum(f.amount);
+  var total=Math.abs(rcNum(f.amount)||0);
   var lines=f.splits.filter(function(s){ return s.envelope_id || rcNum(s.amount)!=null || (s.note||"").trim(); });
   if(!lines.length) return {splits:[]};
   var blanks=lines.filter(function(s){ return rcNum(s.amount)==null; });
   if(blanks.length>1) return {error:"Leave at most one split amount blank \u2014 that line takes whatever is left."};
-  var sum=0; lines.forEach(function(s){ var n=rcNum(s.amount); if(n!=null) sum+=n; });
+  var sum=0; lines.forEach(function(s){ var n=rcNum(s.amount); if(n!=null) sum+=Math.abs(n); });
   var out=lines.map(function(s){
-    var n=rcNum(s.amount); if(n==null) n=Math.round((total-sum)*100)/100;
+    var n=rcNum(s.amount); n=(n==null)?Math.round((total-sum)*100)/100:Math.abs(n);
     return {envelope_id:s.envelope_id||null, amount:n, note:(s.note||"").trim()||null};
   });
   if(out.some(function(s){ return !s.envelope_id; })) return {error:"Each split line needs an envelope (or remove the line)."};
@@ -3347,8 +3347,9 @@ function rcResolveSplits(f){
 function rcRemainText(){
   var f=rcForm, total=rcNum(f.amount);
   if(total==null) return "";
+  total=Math.abs(total);
   var sum=0, blanks=0;
-  f.splits.forEach(function(s){ var n=rcNum(s.amount); if(n==null){ if(s.envelope_id) blanks++; } else sum+=n; });
+  f.splits.forEach(function(s){ var n=rcNum(s.amount); if(n==null){ if(s.envelope_id) blanks++; } else sum+=Math.abs(n); });
   var left=Math.round((total-sum)*100)/100;
   if(blanks===1 && left>0) return "Blank line gets "+fmt(left);
   if(Math.abs(left)<0.005) return '<span style="color:var(--green)">Fully assigned \u2713</span>';
@@ -3384,7 +3385,12 @@ function renderReceipts(){
       '<div><div class="label">Card</div><select id="rcCard" class="field">'+rcCardOptions(f.account_id)+'</select></div>'+
       '<div><div class="label">Date</div><input id="rcDate" type="date" class="field" value="'+esc(f.txn_date)+'"></div>'+
       '<div><div class="label">Store / merchant</div><input id="rcMerch" class="field" list="rcMerchList" autocomplete="off" placeholder="Walmart" value="'+esc(f.merchant)+'"></div>'+
-      '<div><div class="label">Total charged</div><input id="rcAmt" class="field" inputmode="decimal" placeholder="0.00" value="'+esc(f.amount)+'"></div>'+
+      '<div><div class="label">'+(f.credit?"Amount credited back":"Total charged")+'</div><input id="rcAmt" class="field" inputmode="decimal" placeholder="0.00" value="'+esc(f.amount)+'"></div>'+
+    '</div>'+
+    '<div class="row wrapf" style="gap:6px;align-items:center;margin:-4px 0 14px">'+
+      '<button type="button" class="chip rcKind'+(f.credit?'':' on')+'" data-c="0">Purchase</button>'+
+      '<button type="button" class="chip rcKind'+(f.credit?' on':'')+'" data-c="1">Credit back</button>'+
+      '<span class="muted" style="font-size:11.5px">'+(f.credit?'refund, merchant offer or statement credit \u2014 money returns to these envelopes':'')+'</span>'+
     '</div>'+
     '<datalist id="rcMerchList">'+merch.slice(0,60).map(function(m){ return '<option value="'+esc(m)+'">'; }).join("")+'</datalist>'+
     '<div class="label">Brief description</div><input id="rcDesc" class="field" placeholder="e.g. groceries + school supplies" value="'+esc(f.description)+'">'+
@@ -3398,16 +3404,17 @@ function renderReceipts(){
   '</section>';
 
   function row(r, isOpen){
-    var age=rcDays(today, r.txn_date);
+    var age=rcDays(today, r.txn_date), isCr=Number(r.amount)<0, late=isCr?30:7;
     var chips=(r.splits||[]).map(function(s){
       return '<span class="tag" style="color:var(--ink);background:var(--paper)">'+esc(rcEnvName(s.envelope_id))+' '+fmt(s.amount)+
         (s.note?' <span class="muted">\u00b7 '+esc(s.note)+'</span>':'')+'</span>'; }).join(" ");
     var flag = !isOpen ? '<span class="tag" style="color:var(--green);background:var(--green-soft)">imported \u2713</span>'
-      : (age>7 ? '<span class="tag" style="color:var(--rust);background:var(--rust-soft)">no bank match yet \u00b7 '+age+' days</span>'
+      : (age>late ? '<span class="tag" style="color:var(--rust);background:var(--rust-soft)">no bank match yet \u00b7 '+age+' days</span>'
       : '<span class="tag" style="color:var(--gold);background:var(--gold-soft)">waiting for bank</span>');
     return '<div class="mrow" style="grid-template-columns:1fr auto;gap:10px;align-items:start">'+
       '<span style="min-width:0">'+
         '<span style="font-size:13.5px;font-weight:700">'+esc(r.merchant)+'</span> '+
+        (isCr?'<span class="tag" style="color:var(--slate);background:var(--slate-soft)">credit</span> ':'')+
         '<span class="muted">'+esc(rcShort(r.txn_date))+(r.account_id?' \u00b7 '+esc(rcAcctName(r.account_id)):' \u00b7 any card')+'</span>'+
         (r.description?'<div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px">'+esc(r.description)+'</div>':'')+
         '<div class="row wrapf" style="gap:5px;margin-top:5px">'+(chips||'<span class="muted">no envelope \u2014 import will use your merchant rules</span>')+'</div>'+
@@ -3451,6 +3458,8 @@ function rcWire(){
     rcForm.splits.splice(+this.getAttribute("data-i"),1);
     if(!rcForm.splits.length) rcForm.splits.push({envelope_id:"",amount:"",note:""});
     renderReceipts(); });
+  var kinds=document.querySelectorAll(".rcKind");
+  for(var q=0;q<kinds.length;q++) kinds[q].addEventListener("click",function(){ rcForm.credit=this.getAttribute("data-c")==="1"; renderReceipts(); });
   $("rcAddSplit").addEventListener("click",function(){ rcForm.splits.push({envelope_id:"",amount:"",note:""}); renderReceipts(); });
   $("rcSave").addEventListener("click",rcSave);
   if($("rcScanFile")) $("rcScanFile").addEventListener("change",function(){ var fl=this.files&&this.files[0]; this.value=""; rcScanRun(fl); });
@@ -3462,23 +3471,26 @@ function rcWire(){
     var id=this.getAttribute("data-id"), r=null;
     for(var k=0;k<receipts.length;k++) if(receipts[k].id===id) r=receipts[k];
     if(!r) return;
-    rcForm={id:r.id, account_id:r.account_id||"", txn_date:r.txn_date, merchant:r.merchant||"", amount:String(r.amount),
-      description:r.description||"",
-      splits:(r.splits&&r.splits.length)?r.splits.map(function(s){ return {envelope_id:s.envelope_id||"",amount:String(s.amount),note:s.note||""}; })
+    rcForm={id:r.id, account_id:r.account_id||"", txn_date:r.txn_date, merchant:r.merchant||"", amount:String(Math.abs(r.amount)),
+      description:r.description||"", credit:Number(r.amount)<0,
+      splits:(r.splits&&r.splits.length)?r.splits.map(function(s){ return {envelope_id:s.envelope_id||"",amount:String(Math.abs(s.amount)),note:s.note||""}; })
         :[{envelope_id:"",amount:"",note:""}]};
     renderReceipts(); window.scrollTo(0,0);
   });
 }
 
 async function rcSave(){
-  var f=rcForm, total=rcNum(f.amount);
+  var f=rcForm, typed=rcNum(f.amount);
   function bad(m){ $("rcErr").textContent=m; }
   if(!(f.merchant||"").trim()) return bad("Add the store or merchant.");
-  if(total==null||total<=0) return bad("Add the total charged.");
+  if(typed==null||typed===0) return bad(f.credit?"Add the amount credited.":"Add the total charged.");
+  if(typed<0) f.credit=true;
+  var sign=f.credit?-1:1, total=Math.abs(typed);
   if(!f.txn_date) return bad("Add the date.");
   var rs=rcResolveSplits(f); if(rs.error) return bad(rs.error);
-  var body={account_id:f.account_id||null, txn_date:f.txn_date, merchant:f.merchant.trim(), amount:total,
-    description:(f.description||"").trim()||null, splits:rs.splits};
+  var body={account_id:f.account_id||null, txn_date:f.txn_date, merchant:f.merchant.trim(), amount:sign*total,
+    description:(f.description||"").trim()||null,
+    splits:rs.splits.map(function(x){ return {envelope_id:x.envelope_id, amount:sign*x.amount, note:x.note}; })};
   var b=$("rcSave"); b.disabled=true; b.textContent="Saving\u2026";
   try{
     if(f.id) await patchFull("receipts",f.id,body);
@@ -3668,20 +3680,22 @@ function rcMerchSim(bank, mine){
 // Can this bank row be that logged purchase? Returns null, or a scored candidate with its alerts.
 function rcCandidate(row, rc, acctId){
   if(rc.account_id && rc.account_id!==acctId) return null;
+  var want=Number(rc.amount);
+  if((row.amount<0)!==(want<0)) return null;           // a credit only matches a credit
   var days=rcDays(row.date, rc.txn_date);              // + means the bank dated it later
-  if(days<-2 || days>6) return null;
-  var want=Number(rc.amount), ad=Math.round(Math.abs(row.amount-want)*100)/100;
+  if(days<-2 || days>(want<0?45:6)) return null;       // merchant-offer credits can post weeks later
+  var mag=Math.abs(want), ad=Math.round(Math.abs(row.amount-want)*100)/100;
   var sim=rcMerchSim(row.merchant, rc.merchant);
-  var tight=ad<=Math.max(1, want*0.02);                 // pennies / rounding
-  var loose=sim && ad<=want*0.30;                       // tips, pending holds, same store
+  var tight=ad<=Math.max(1, mag*0.02);                  // pennies / rounding
+  var loose=sim && ad<=mag*0.30;                        // tips, pending holds, same store
   if(!(tight||loose)) return null;
   if(!sim && ad>=0.005) return null;                    // different name AND different amount: too weak
   var alerts=[];
-  if(ad>=0.005) alerts.push("bank amount "+(row.amount>want?"+":"\u2212")+fmt(ad)+" vs logged "+fmt(want));
+  if(ad>=0.005) alerts.push("bank amount "+(Math.abs(row.amount)>mag?"+":"\u2212")+fmt(ad)+" vs logged "+fmt(mag)+(want<0?" credit":""));
   if(days!==0) alerts.push("bank date "+Math.abs(days)+" day"+(Math.abs(days)===1?"":"s")+(days>0?" later":" earlier"));
   if(!sim) alerts.push("merchant name looks different (\u201c"+rc.merchant+"\u201d)");
   // lower is better: a same-store match always outranks a different-store one
-  return {rc:rc, alerts:alerts, score:(sim?0:20)+(want>0?ad/want*20:ad)+Math.abs(days)};
+  return {rc:rc, alerts:alerts, score:(sim?0:20)+(mag>0?ad/mag*20:ad)+Math.abs(days)};
 }
 function rcRowKey(r){ return r.date+"|"+r.merchant+"|"+r.amount; }
 
@@ -3692,9 +3706,9 @@ function rcApply(row, rc, alerts){
   if(!sp.length) return;                                // description only; envelope stays from rules
   var diff=Math.round((row.amount-Number(rc.amount))*100)/100;
   if(Math.abs(diff)>=0.005){
-    var big=0; for(var k=1;k<sp.length;k++) if(sp[k].amount>sp[big].amount) big=k;
+    var big=0; for(var k=1;k<sp.length;k++) if(Math.abs(sp[k].amount)>Math.abs(sp[big].amount)) big=k;
     sp[big].amount=Math.round((sp[big].amount+diff)*100)/100;
-    if(sp[big].amount<=0){                              // rare: fall back to proportional
+    if(sp[big].amount*row.amount<=0){                              // rare: fall back to proportional
       var f=row.amount/Number(rc.amount), tot=0;
       sp=(rc.splits||[]).map(function(s){ var a=Math.round(Number(s.amount)*f*100)/100; tot+=a; return {envelope_id:s.envelope_id,amount:a,note:s.note||null}; });
       sp[0].amount=Math.round((sp[0].amount+row.amount-tot)*100)/100;
@@ -3713,7 +3727,7 @@ function rcMatchImport(){
   });
   var pairs=[];
   imp.rows.forEach(function(r,i){
-    if(!(r.amount>0) || r.dupe) return;
+    if(!r.amount || r.dupe) return;
     pool.forEach(function(rc){
       if(imp.reject[rcRowKey(r)+"|"+rc.id]) return;
       var c=rcCandidate(r,rc,acctId); if(c){ c.i=i; pairs.push(c); }
