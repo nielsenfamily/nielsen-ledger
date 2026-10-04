@@ -3109,11 +3109,13 @@ function entitySeries(kind, ids){
 
 function histItems(){
   if(histSource==="insurance")
-    return policies.map(function(p){ return {id:p.id, name:p.insurer+(p.policy_name?" \u00b7 "+p.policy_name:"")+" ("+(p.insured||"")+")"}; });
+    // term / group life has only a face value, which never moves, so it isn't charted
+    return policies.filter(function(p){ return p.cash_value!=null || p.surrender_value!=null; })
+      .map(function(p){ return {id:p.id, name:p.insurer+(p.policy_name?" \u00b7 "+p.policy_name:"")+" ("+(p.insured||"")+")"}; });
   if(histSource==="kids")
     return kids.map(function(k){ return {id:k.id, name:k.child+" \u00b7 "+(k.account_type||"account")}; });
   if(histSource==="accounts")
-    return accts.filter(function(a){ return a.active!==false; }).map(function(a){
+    return accts.filter(function(a){ return a.active!==false && a.kind!=="credit_card"; }).map(function(a){
       var inst=(a.institutions&&a.institutions.name)||"";
       return {id:a.id, name:a.name+(inst?" \u00b7 "+inst:"")+(a.owner&&a.owner!=="Joint"?" \u00b7 "+a.owner:"")}; });
   return raw.map(function(e){ return {id:e.id, name:e.name}; });
