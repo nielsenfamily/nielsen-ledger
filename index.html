@@ -131,6 +131,7 @@
   .tr-maptools .btn{padding:6px 10px;font-size:12.5px}
   .tr-maptools .btn.on{background:var(--teal);border-color:var(--teal);color:#fff}
   .tr-drop #trMap{cursor:crosshair}
+  .tr-tiles{filter:grayscale(.75) brightness(1.06) contrast(.92)}
   .tr-side{padding:12px 14px;max-height:none}
   .tr-search{position:relative}
   .tr-side .tr-search input{margin-bottom:0}
@@ -4528,6 +4529,8 @@ function trIndex(){
   TD.cities.forEach(function(c){ add({kind:"city",ref:"ci:"+c[0],name:c[1],cc:c[2],region:c[3],lat:c[4],lng:c[5],w:c[6]+(c[7]?2e7:0)}); });
   X.byRef={}; X.items.forEach(function(o){ X.byRef[o.ref]=o; });
   X.wFeat=topojson.feature(TD.world,TD.world.objects.countries);
+  X.wFeat.features=X.wFeat.features.filter(function(f){ return f.id!=="010"; });
+  X.wFeat.features.forEach(function(f){ trUnwrapGeom(f.geometry); });
   X.sFeat=topojson.feature(TD.usStates,TD.usStates.objects.states);
   TX=X;
 }
@@ -4614,8 +4617,8 @@ function trShapeStyle(who, want){
 function trInitMap(){
   if(trMap) return;
   trMap=L.map("trMap",{worldCopyJump:true,minZoom:1.5,zoomSnap:.5}).setView([34,-40],2);
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-    {attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',subdomains:"abcd",maxZoom:18}).addTo(trMap);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',maxZoom:18,className:"tr-tiles"}).addTo(trMap);
   trDerive();
   trCoLayer=L.geoJSON(TX.wFeat,{style:trCoStyle,onEachFeature:function(f,l){ l.on("click",function(e){ L.DomEvent.stopPropagation(e); trShapeClick("co",f,e.latlng); }); }}).addTo(trMap);
   trStLayer=L.geoJSON(TX.sFeat,{style:trStStyle,onEachFeature:function(f,l){ l.on("click",function(e){ L.DomEvent.stopPropagation(e); trShapeClick("st",f,e.latlng); }); }}).addTo(trMap);
@@ -4680,10 +4683,16 @@ function trFitAll(){
   if(pts.length>1) trMap.fitBounds(pts,{padding:[30,30],maxZoom:6}); else if(pts.length) trMap.setView(pts[0],5);
 }
 
+/* ---- shapes crossing the date line (Russia, Fiji): unwrap so they don't streak across the map ---- */
+function trUnwrapGeom(g){ if(!g) return; var polys=g.type==="Polygon"?[g.coordinates]:g.type==="MultiPolygon"?g.coordinates:[];
+  polys.forEach(function(poly){ poly.forEach(function(ring){ var prev=null, sum=0;
+    ring.forEach(function(pt){ if(prev!==null){ while(pt[0]-prev>180) pt[0]-=360; while(pt[0]-prev<-180) pt[0]+=360; } prev=pt[0]; sum+=pt[0]; });
+    var shift=sum/ring.length>180?-360:sum/ring.length<-180?360:0; if(shift) ring.forEach(function(pt){ pt[0]+=shift; }); }); }); }
 /* ---- point-in-polygon for dropped pins ---- */
 function trInRing(x,y,ring){ var ins=false; for(var i=0,j=ring.length-1;i<ring.length;j=i++){ var xi=ring[i][0],yi=ring[i][1],xj=ring[j][0],yj=ring[j][1];
   if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi)) ins=!ins; } return ins; }
-function trInGeom(x,y,g){ if(!g) return false; var polys=g.type==="Polygon"?[g.coordinates]:g.type==="MultiPolygon"?g.coordinates:[];
+function trInGeom(x,y,g){ if(!g) return false; if(x<0&&trInGeom0(x+360,y,g)) return true; if(x>0&&trInGeom0(x-360,y,g)) return true; return trInGeom0(x,y,g); }
+function trInGeom0(x,y,g){ var polys=g.type==="Polygon"?[g.coordinates]:g.type==="MultiPolygon"?g.coordinates:[];
   for(var i=0;i<polys.length;i++){ if(trInRing(x,y,polys[i][0])){ var hole=false; for(var h=1;h<polys[i].length;h++) if(trInRing(x,y,polys[i][h])) hole=true; if(!hole) return true; } } return false; }
 function trLocate(ll){
   var x=((ll.lng+540)%360)-180, y=ll.lat, out={cc:null,region:null};
