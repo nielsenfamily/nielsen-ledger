@@ -115,6 +115,81 @@
     .mhead{display:none}
     .mrow{padding:10px 14px}
   }
+
+  /* ---- travel ---- */
+  .tr-top{padding:12px 14px;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .tr-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .tr-pc{display:inline-flex;align-items:center;gap:6px}
+  .tr-pc i{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .chip.on .tr-pc i{box-shadow:0 0 0 2px #fff}
+  .tr-main{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:14px;align-items:start}
+  @media (max-width:880px){ .tr-main{grid-template-columns:1fr} }
+  .tr-mapwrap{position:relative;overflow:hidden;border-radius:14px;isolation:isolate;z-index:0}
+  #trMap{height:520px;background:#DDE8EC}
+  @media (max-width:880px){ #trMap{height:360px} }
+  .tr-maptools{display:flex;flex-wrap:wrap;gap:6px;padding:9px 10px;border-top:1px solid var(--line);background:var(--card)}
+  .tr-maptools .btn{padding:6px 10px;font-size:12.5px}
+  .tr-maptools .btn.on{background:var(--teal);border-color:var(--teal);color:#fff}
+  .tr-drop #trMap{cursor:crosshair}
+  .tr-side{padding:12px 14px;max-height:none}
+  .tr-search{position:relative}
+  .tr-side .tr-search input{margin-bottom:0}
+  .tr-sug{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:600;background:var(--card);border:1px solid var(--line);
+    border-radius:10px;box-shadow:0 10px 28px rgba(18,35,46,.16);max-height:330px;overflow:auto}
+  .tr-sug button{display:flex;justify-content:space-between;gap:10px;width:100%;text-align:left;padding:9px 12px;border:none;
+    border-top:1px solid var(--paper);background:none;font-size:13.5px;color:var(--ink);cursor:pointer}
+  .tr-sug button:hover,.tr-sug button.hi{background:var(--teal-soft)}
+  .tr-sug .s{font-size:11px;color:var(--ink-soft);white-space:nowrap}
+  .tr-ed{border:1px solid var(--teal);background:var(--teal-soft);border-radius:12px;padding:12px;margin:12px 0}
+  .tr-ed-name{font-size:16.5px;font-weight:800;letter-spacing:-.2px}
+  .tr-wrow{display:grid;grid-template-columns:1fr repeat(3,38px) 62px;gap:5px;align-items:center;padding:4px 0}
+  .tr-pn{display:flex;align-items:center;gap:7px;font-weight:700;font-size:13.5px}
+  .tr-pn i{width:10px;height:10px;border-radius:50%}
+  .tr-tg{height:34px;border:1px solid var(--line);background:var(--card);border-radius:8px;font-size:15px;cursor:pointer;color:#B9C1C7;padding:0}
+  .tr-tg.on.f-been{background:var(--teal);border-color:var(--teal);color:#fff}
+  .tr-tg.on.f-want{background:var(--gold);border-color:var(--gold);color:#fff}
+  .tr-tg.on.f-fave{background:var(--rust);border-color:var(--rust);color:#fff}
+  .tr-yr{width:62px;height:34px;padding:4px 6px;border:1px solid var(--line);border-radius:8px;font-size:14px;text-align:center;font-family:inherit;background:var(--card)}
+  .tr-colh{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);font-weight:700;text-align:center}
+  .tr-list{max-height:430px;overflow:auto;margin-top:8px;border-top:1px solid var(--line)}
+  .tr-li{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:8px 4px;border:none;border-bottom:1px solid var(--paper);
+    background:none;text-align:left;cursor:pointer;color:var(--ink);font-size:13.5px}
+  .tr-li:hover{background:var(--paper)}
+  .tr-dots{display:flex;gap:3px;flex-shrink:0}
+  .tr-dots i{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .tr-dots i.w{background:transparent!important;border:2px solid}
+  .trp{display:flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:2px solid #fff;
+    box-shadow:0 1px 4px rgba(0,0,0,.35);color:#fff;font-size:9px;font-weight:800;line-height:1}
+  .trp.k-park{border-radius:4px}
+  .trp.k-site{border-radius:3px;transform:rotate(45deg)}
+  .trp.k-site b{display:inline-block;transform:rotate(-45deg)}
+  .trp.want{background:#fff!important;border:2.5px dashed var(--gold);color:var(--gold)}
+  .trp.fave{width:20px;height:20px;font-size:11px}
+  .tr-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px;margin-top:14px}
+  .tr-st{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .tr-st .n{font-size:27px;font-weight:800;letter-spacing:-.8px;line-height:1.1}
+  .tr-st .n small{font-size:13px;color:var(--ink-soft);font-weight:700;letter-spacing:0}
+  .tr-st .l{font-size:12px;font-weight:700;color:var(--ink-soft);margin-top:2px}
+  .tr-st .s{font-size:11.5px;color:var(--ink-soft);margin-top:5px;line-height:1.35}
+  .tr-st .pb{height:5px;background:var(--paper);border-radius:3px;margin-top:7px;overflow:hidden}
+  .tr-st .pb i{display:block;height:100%;background:var(--teal)}
+  .tr-st .ic{font-size:17px;float:right;opacity:.85}
+  .tr-h{font-size:12px;letter-spacing:1.4px;text-transform:uppercase;font-weight:800;color:var(--ink-soft);margin:20px 0 4px}
+  .tr-tbl{width:100%;border-collapse:collapse;font-size:13px}
+  .tr-tbl th{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);text-align:right;padding:9px 10px;background:var(--paper)}
+  .tr-tbl th:first-child,.tr-tbl td:first-child{text-align:left}
+  .tr-tbl td{padding:8px 10px;border-top:1px solid var(--paper);text-align:right}
+  .tr-tbl td.top{font-weight:800;color:var(--teal)}
+  .tr-ff{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 12px}
+  .tr-ff .w2{grid-column:span 2}
+  @media (max-width:700px){ .tr-ff{grid-template-columns:1fr 1fr} }
+  .tr-ff .field{margin-bottom:12px}
+  .tr-fl{display:grid;grid-template-columns:78px minmax(0,1.3fr) minmax(0,1.2fr) 64px 92px 48px;gap:8px;align-items:center;padding:9px 14px;border-top:1px solid var(--paper);font-size:13px}
+  .tr-fl.h{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);font-weight:700;background:var(--paper)}
+  @media (max-width:700px){ .tr-fl{grid-template-columns:64px 1fr 56px;row-gap:3px} .tr-fl .c-air{grid-column:2/4} .tr-fl.h{display:none} .tr-fl .c-who{grid-column:2/3} }
+  .tr-cloud{display:flex;flex-wrap:wrap;gap:6px;padding:12px 14px}
+  .tr-cloud span{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:4px 10px;font-size:12.5px;font-weight:650}
+  .tr-cloud span b{color:var(--teal)}
 </style>
 </head>
 <body>
@@ -141,6 +216,7 @@
     <div class="row wrapf" style="gap:8px" id="navbar">
       <button class="tab on" data-tab="envelopes">Envelopes</button>
       <button class="tab" data-tab="txns">Transactions</button>
+      <button class="tab" data-tab="travel">Travel</button>
 
       <div class="menu">
         <button class="tab menu-btn" data-menu="money">Money <span style="font-size:9px">&#9660;</span></button>
@@ -708,6 +784,7 @@
   <div id="viewCredits" class="hidden"><div id="creditsBody"></div></div>
   <!-- LOYALTY VIEW -->
   <div id="viewLoyalty" class="hidden"><div id="loyaltyBody"></div></div>
+  <div id="viewTravel" class="hidden"></div>
 
   <!-- OFFER MODAL -->
   <div id="offerModal" class="hidden" style="position:fixed;inset:0;background:rgba(18,35,46,.45);display:flex;align-items:flex-start;justify-content:center;padding:18px;overflow-y:auto;z-index:60">
@@ -971,6 +1048,7 @@ async function load(){
     await loadDocs();
     await loadPerks();
     await loadReceipts();
+    trDirty=true;
     draw();
   }catch(e){
     var el=$("loadErr");
@@ -1292,6 +1370,7 @@ function draw(){
   $("viewOffers").classList.add("hidden");
   $("viewCredits").classList.add("hidden");
   $("viewLoyalty").classList.add("hidden");
+  $("viewTravel").classList.add("hidden");
   if(tab==="envelopes"){ $("viewEnvelopes").classList.remove("hidden"); renderEnvelopes(); wireEnv(); }
   else if(tab==="txns"){ $("viewTxns").classList.remove("hidden"); renderTxns(); }
   else if(tab==="notes"){ $("viewNotes").classList.remove("hidden"); renderNotes(); }
@@ -1305,6 +1384,7 @@ function draw(){
   else if(tab==="offers"){ $("viewOffers").classList.remove("hidden"); renderOffers(); }
   else if(tab==="credits"){ $("viewCredits").classList.remove("hidden"); renderCredits(); }
   else if(tab==="loyalty"){ $("viewLoyalty").classList.remove("hidden"); renderLoyalty(); }
+  else if(tab==="travel"){ $("viewTravel").classList.remove("hidden"); renderTravel(); }
   else { $("viewManage").classList.remove("hidden"); renderManage(); }
 }
 
@@ -2821,6 +2901,7 @@ async function savePolicy(){
     await loadDocs();
     await loadPerks();
     await loadReceipts();
+    trDirty=true;
     draw();
   }catch(e){ toast(e.message); }
   finally{ b.disabled=false; b.textContent="Save"; }
@@ -4373,6 +4454,612 @@ $("addSplit").addEventListener("click",function(){ splitRows.push({env:"",amt:""
 $("saveTxn").addEventListener("click",saveTxn);
 $("fAmt").addEventListener("input",checkSum);
 $("modal").addEventListener("click",function(e){ if(e.target===this) closeModal(); });
+
+
+/* ================= TRAVEL (family map, stats, flight log) ================= */
+// Everyone's places on one map. Each place has a mark per person (Been / Want / Fave),
+// so any one person's map — or the whole family's — is just a filter.
+// Reference data (cities, countries, parks, sites, airports, airlines, map shapes) lives in
+// travel-data.json next to index.html and is loaded only when this tab is opened.
+var TR_PEOPLE=[{n:"Jared",c:"#1F5FA8"},{n:"Kayla",c:"#C2477A"},{n:"Andrew",c:"#0E7C7B"},{n:"Josiah",c:"#B8892B"},{n:"Aravis",c:"#7B5EA7"}];
+var TR_HOME={lat:32.7668,lng:-96.5992};
+var TR_LJS="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+var TR_LCSS="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
+var TR_TOPO="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js";
+var TR_KIND={city:"City",state:"U.S. state",country:"Country",park:"National park",site:"Special site"};
+var TR_CONT={NA:"North America",SA:"South America",EU:"Europe",AF:"Africa",AS:"Asia",OC:"Oceania",AN:"Antarctica"};
+var TD=null, TX=null, trPlaces=[], trMarks=[], trFlights=[], trMissing=false, trDirty=true, trBusy=false, trInited=false;
+var trWho="all", trShow={been:true,want:true,fave:true}, trSub="map", trKind="all";
+var trMap=null, trCoLayer=null, trStLayer=null, trPinLayer=null, trFlLayer=null, trTmp=null, trPaths=false, trDrop=false;
+var trEdit=null, trFF=null, trMk={}, trD=null;
+
+function trNorm(s){ return String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim(); }
+function trColor(n){ for(var i=0;i<TR_PEOPLE.length;i++) if(TR_PEOPLE[i].n===n) return TR_PEOPLE[i].c; return "#5A6B78"; }
+function trScope(){ return trWho==="all" ? TR_PEOPLE.map(function(p){ return p.n; }) : [trWho]; }
+function trMiles(a,b,c,d){ var R=3958.8, r=Math.PI/180, x=Math.sin((c-a)*r/2), y=Math.sin((d-b)*r/2);
+  var h=x*x+Math.cos(a*r)*Math.cos(c*r)*y*y; return 2*R*Math.asin(Math.min(1,Math.sqrt(h))); }
+function trN(n){ return Math.round(n||0).toLocaleString("en-US"); }
+
+function trLoadScript(src){ return new Promise(function(res,rej){ var s=document.createElement("script"); s.src=src; s.onload=res;
+  s.onerror=function(){ rej(new Error("Couldn't load "+src)); }; document.head.appendChild(s); }); }
+async function trEnsureLibs(){
+  if(!document.querySelector('link[href="'+TR_LCSS+'"]')){ var l=document.createElement("link"); l.rel="stylesheet"; l.href=TR_LCSS; document.head.appendChild(l); }
+  if(!window.L) await trLoadScript(TR_LJS);
+  if(!window.topojson) await trLoadScript(TR_TOPO);
+}
+async function trEnsureData(){
+  if(TD) return;
+  var r=await fetch("travel-data.json");
+  if(!r.ok) throw new Error("travel-data.json wasn't found next to index.html (upload it to GitHub alongside index.html).");
+  TD=await r.json(); trIndex();
+}
+async function trGetAll(path){
+  var out=[], from=0;
+  while(true){
+    var r=await fetch(SUPABASE_URL+"/rest/v1/"+path,{headers:headers({"Range-Unit":"items",Range:from+"-"+(from+999)})});
+    if(!r.ok) return null;
+    var d=await r.json(); out=out.concat(d);
+    if(d.length<1000) return out; from+=1000;
+  }
+}
+async function loadTravel(){
+  var a=await trGetAll("travel_places?select=*&order=name"),
+      b=await trGetAll("travel_marks?select=*"),
+      c=await trGetAll("travel_flights?select=*&order=created_at.desc");
+  trMissing=(a===null||b===null||c===null);
+  trPlaces=a||[]; trMarks=b||[]; trFlights=c||[];
+  trMk={}; trMarks.forEach(function(m){ (trMk[m.place_id]=trMk[m.place_id]||{})[m.person]=m; });
+}
+
+/* ---- reference-data index ---- */
+function trIndex(){
+  var X={cc:{},n3:{},st:{},stName:{},ap:{},items:[]};
+  TD.countries.forEach(function(c){ X.cc[c[0]]={cc:c[0],name:c[1],n3:c[2],cont:c[3],area:c[4],un:c[5],lat:c[6],lng:c[7]}; if(c[2]) X.n3[c[2]]=c[0]; });
+  TD.states.forEach(function(s){ X.st[s[0]]=s[1]; X.stName[s[1]]=s[0]; });
+  TD.airports.forEach(function(a){ X.ap[a[0]]={code:a[0],name:a[1],city:a[2],cc:a[3],lat:a[4],lng:a[5]}; });
+  X.total195=0; for(var k in X.cc) if(X.cc[k].un) X.total195+=X.cc[k].area;
+  var ALIAS={"si:911":"world trade center ground zero wtc","si:whho":"white house","si:wdw":"magic kingdom epcot","si:pear":"uss arizona","si:bigb":"parliament london","si:smsq":"san marco","si:gwal":"great wall of china","si:llou":"banff","np:grsm":"smoky mountains smokies","np:jeff":"st louis arch","co:US":"usa america","co:GB":"uk england scotland wales britain"};
+  function add(o){ o.nm=trNorm(o.name); o.cmp=o.nm.replace(/ /g,""); if(ALIAS[o.ref]) o.alt=(o.alt?o.alt+" ":"")+ALIAS[o.ref]; X.items.push(o); }
+  TD.countries.forEach(function(c){ add({kind:"country",ref:"co:"+c[0],name:c[1],cc:c[0],region:"",lat:c[6],lng:c[7],w:6e9}); });
+  TD.states.forEach(function(s){ add({kind:"state",ref:"st:"+s[0],name:s[1],cc:"US",region:s[0],lat:null,lng:null,w:5e9,alt:trNorm(s[0])}); });
+  TD.parks.forEach(function(p){ var nm=/^National Park/.test(p[1])?p[1]:p[1]+" National Park";
+    add({kind:"park",ref:"np:"+p[0],name:nm,cc:(p[2]==="AS"||p[2]==="VI")?p[2]:"US",region:(p[2]==="AS"||p[2]==="VI")?"":p[2],lat:p[3],lng:p[4],w:4e9}); });
+  TD.sites.forEach(function(s){ add({kind:"site",ref:"si:"+s[0],name:s[1],cc:s[2],region:s[3],lat:s[4],lng:s[5],w:4e9}); });
+  TD.cities.forEach(function(c){ add({kind:"city",ref:"ci:"+c[0],name:c[1],cc:c[2],region:c[3],lat:c[4],lng:c[5],w:c[6]+(c[7]?2e7:0)}); });
+  X.byRef={}; X.items.forEach(function(o){ X.byRef[o.ref]=o; });
+  X.wFeat=topojson.feature(TD.world,TD.world.objects.countries);
+  X.sFeat=topojson.feature(TD.usStates,TD.usStates.objects.states);
+  TX=X;
+}
+function trCountryName(cc){ return (TX&&TX.cc[cc])?TX.cc[cc].name:(cc||""); }
+function trDetail(p){ // "Paris, France" detail line
+  if(p.kind==="city"||p.kind==="site"||p.kind==="park") return (p.country_code==="US"&&p.region)?(TX.st[p.region]||p.region):trCountryName(p.country_code);
+  return "";
+}
+function trLabel(p){
+  if(p.kind==="city") return p.name+", "+((p.country_code==="US"&&p.region)?p.region:trCountryName(p.country_code));
+  return p.name;
+}
+function trItemToPlace(o){ return {id:null,kind:o.kind,ref:o.ref,name:o.name,region:o.region||null,country_code:o.cc||null,lat:o.lat,lng:o.lng,note:null}; }
+
+function trSearch(q){
+  var qn=trNorm(q); if(qn.length<2) return [];
+  var qc=qn.replace(/ /g,""), res=[], seenRef={};
+  trPlaces.forEach(function(p){ if(trNorm(trLabel(p)).indexOf(qn)>=0){ res.push({saved:p,score:-1,label:trLabel(p),sub:"on your map"}); if(p.ref) seenRef[p.ref]=1; } });
+  var cand=[];
+  for(var i=0;i<TX.items.length;i++){
+    var o=TX.items[i]; if(seenRef[o.ref]) continue;
+    var t; if(o.nm===qn||o.alt===qn) t=0; else if(o.nm.indexOf(qn)===0||o.cmp.indexOf(qc)===0) t=1; else if(o.nm.indexOf(" "+qn)>0||(o.alt&&(" "+o.alt).indexOf(" "+qn)>=0)) t=2; else if(qn.length>=4&&o.nm.indexOf(qn)>0) t=3; else continue;
+    cand.push({o:o,score:t*1e11-o.w});
+  }
+  cand.sort(function(a,b){ return a.score-b.score; });
+  cand.slice(0,14-Math.min(res.length,6)).forEach(function(c){ var o=c.o, p=trItemToPlace(o);
+    res.push({item:o,label:trLabel(p),sub:TR_KIND[o.kind]+((o.kind==="park"||o.kind==="site")?" · "+trDetail(p):"")}); });
+  return res.slice(0,14);
+}
+
+/* ---- generic typeahead ---- */
+function trSuggest(input, box, fn, pick){
+  var hi=0, list=[];
+  function show(){
+    list=fn(input.value);
+    if(!list.length){ box.innerHTML=""; box.classList.add("hidden"); return; }
+    hi=0;
+    box.innerHTML=list.map(function(it,i){ return '<button type="button" data-i="'+i+'"'+(i===0?' class="hi"':'')+'><span>'+esc(it.label)+'</span><span class="s">'+esc(it.sub||"")+'</span></button>'; }).join("");
+    box.classList.remove("hidden");
+  }
+  input.addEventListener("input",show);
+  input.addEventListener("focus",function(){ if(input.value) show(); });
+  input.addEventListener("blur",function(){ setTimeout(function(){ box.classList.add("hidden"); },180); });
+  input.addEventListener("keydown",function(e){
+    if(box.classList.contains("hidden")) return;
+    if(e.key==="ArrowDown"||e.key==="ArrowUp"){ e.preventDefault(); hi=(hi+(e.key==="ArrowDown"?1:-1)+list.length)%list.length;
+      var bs=box.querySelectorAll("button"); for(var i=0;i<bs.length;i++) bs[i].classList.toggle("hi",i===hi); }
+    else if(e.key==="Enter"){ e.preventDefault(); if(list[hi]){ box.classList.add("hidden"); pick(list[hi]); } }
+  });
+  box.addEventListener("mousedown",function(e){ var b=e.target.closest("button"); if(!b) return; e.preventDefault();
+    box.classList.add("hidden"); pick(list[+b.getAttribute("data-i")]); });
+}
+
+/* ---- derived visits for the current scope ---- */
+function trDerive(){
+  var scope=trScope(), D={co:{},st:{},coWant:{},stWant:{},pins:[]};
+  function addSet(map,key,person){ if(!key) return; (map[key]=map[key]||{})[person]=1; }
+  trPlaces.forEach(function(p){
+    var mk=trMk[p.id]||{}, been=[], want=[], fave=[];
+    scope.forEach(function(n){ var m=mk[n]; if(!m) return; if(m.been) been.push(n); if(m.want) want.push(n); if(m.fave) fave.push(n); });
+    var cc=p.kind==="state"?"US":p.country_code, stc=(p.country_code==="US"||p.kind==="state")?p.region:null;
+    been.forEach(function(n){ addSet(D.co,cc,n); if(stc) addSet(D.st,stc,n); });
+    if(!been.length) want.forEach(function(n){ addSet(D.coWant,(p.kind==="country"||p.kind==="state")?cc:null,n); if(p.kind==="state") addSet(D.stWant,stc,n); });
+    if(p.kind!=="country"&&p.kind!=="state"&&p.lat!=null) D.pins.push({p:p,been:been,want:want,fave:fave});
+  });
+  trD=D; return D;
+}
+
+/* ---- map ---- */
+function trCoStyle(f){
+  var cc=TX.n3[f.id], who=cc&&trD.co[cc]?Object.keys(trD.co[cc]):[];
+  if(cc==="US" && trStLayer) who=[]; // the US is shaded state by state
+  return trShapeStyle(who, cc&&trD.coWant[cc]);
+}
+function trStStyle(f){ var c=TX.stName[f.properties.name], who=c&&trD.st[c]?Object.keys(trD.st[c]):[]; return trShapeStyle(who, c&&trD.stWant[c]); }
+function trShapeStyle(who, want){
+  if(who.length && trShow.been){
+    var col=who.length===1?trColor(who[0]):"#0E7C7B", op=who.length===1?.42:Math.min(.75,.2+.11*who.length);
+    return {color:col,weight:.8,opacity:.7,fillColor:col,fillOpacity:op};
+  }
+  if(want && trShow.want) return {color:"#B8892B",weight:1.6,dashArray:"4 3",opacity:.9,fillColor:"#B8892B",fillOpacity:.08};
+  return {color:"#9AA9B2",weight:.5,opacity:.5,fillOpacity:0};
+}
+function trInitMap(){
+  if(trMap) return;
+  trMap=L.map("trMap",{worldCopyJump:true,minZoom:1.5,zoomSnap:.5}).setView([34,-40],2);
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+    {attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',subdomains:"abcd",maxZoom:18}).addTo(trMap);
+  trDerive();
+  trCoLayer=L.geoJSON(TX.wFeat,{style:trCoStyle,onEachFeature:function(f,l){ l.on("click",function(e){ L.DomEvent.stopPropagation(e); trShapeClick("co",f,e.latlng); }); }}).addTo(trMap);
+  trStLayer=L.geoJSON(TX.sFeat,{style:trStStyle,onEachFeature:function(f,l){ l.on("click",function(e){ L.DomEvent.stopPropagation(e); trShapeClick("st",f,e.latlng); }); }}).addTo(trMap);
+  trFlLayer=L.layerGroup().addTo(trMap);
+  trPinLayer=L.layerGroup().addTo(trMap);
+  trMap.on("click",function(e){ if(trDrop) trDropAt(e.latlng); });
+}
+function trShapeClick(type,f,latlng){
+  if(trDrop){ trDropAt(latlng); return; }
+  var ref=null;
+  if(type==="st"){ var c=TX.stName[f.properties.name]; if(c) ref="st:"+c; }
+  else { var cc=TX.n3[f.id]; if(cc) ref="co:"+cc; }
+  if(ref) trOpenRef(ref);
+}
+function trPinHtml(pin){
+  var p=pin.p, k="trp k-"+p.kind, bg="", inner="";
+  var faveOn=trShow.fave&&pin.fave.length;
+  if(pin.been.length && trShow.been){ bg=pin.been.length===1?trColor(pin.been[0]):"#12232E"; if(pin.been.length>1) inner=String(pin.been.length); }
+  else if(pin.want.length && trShow.want){ k+=" want"; inner="★"; }
+  else if(faveOn){ bg=trColor(pin.fave[0]); }
+  else return null;
+  if(faveOn){ k+=" fave"; inner="♥"; }
+  return '<div class="'+k+'" style="'+(bg?'background:'+bg:'')+'"><b>'+inner+'</b></div>';
+}
+function trRenderMap(){
+  if(!trMap) return;
+  trDerive();
+  trCoLayer.setStyle(trCoStyle); trStLayer.setStyle(trStStyle);
+  trPinLayer.clearLayers();
+  trD.pins.forEach(function(pin){
+    var h=trPinHtml(pin); if(!h) return;
+    var sz=pin.fave.length&&trShow.fave?20:16;
+    var m=L.marker([pin.p.lat,pin.p.lng],{icon:L.divIcon({html:h,className:"",iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]}),riseOnHover:true});
+    var who=pin.been.length?"Been: "+pin.been.join(", "):pin.want.length?"Wants: "+pin.want.join(", "):"";
+    m.bindTooltip("<b>"+esc(trLabel(pin.p))+"</b>"+(who?"<br>"+esc(who):""),{direction:"top",offset:[0,-8]});
+    m.on("click",function(){ trOpenPlace(pin.p); });
+    trPinLayer.addLayer(m);
+  });
+  trFlLayer.clearLayers();
+  if(trPaths){
+    trScopedFlights().forEach(function(f){
+      var a=TX.ap[f.from_code], b=TX.ap[f.to_code]; if(!a||!b) return;
+      var who=(f.people||[]).filter(function(n){ return trScope().indexOf(n)>=0; });
+      L.polyline(trArc(a,b),{color:who.length===1?trColor(who[0]):"#12232E",weight:1.6,opacity:.55,interactive:false}).addTo(trFlLayer);
+    });
+  }
+}
+function trArc(a,b){ // great-circle points, longitudes unwrapped so the line doesn't streak across the map
+  var r=Math.PI/180, la1=a.lat*r, lo1=a.lng*r, la2=b.lat*r, lo2=b.lng*r;
+  var d=2*Math.asin(Math.sqrt(Math.pow(Math.sin((la2-la1)/2),2)+Math.cos(la1)*Math.cos(la2)*Math.pow(Math.sin((lo2-lo1)/2),2)));
+  if(d<1e-6) return [[a.lat,a.lng],[b.lat,b.lng]];
+  var pts=[], prev=null;
+  for(var i=0;i<=40;i++){ var f=i/40, A=Math.sin((1-f)*d)/Math.sin(d), B=Math.sin(f*d)/Math.sin(d);
+    var x=A*Math.cos(la1)*Math.cos(lo1)+B*Math.cos(la2)*Math.cos(lo2), y=A*Math.cos(la1)*Math.sin(lo1)+B*Math.cos(la2)*Math.sin(lo2), z=A*Math.sin(la1)+B*Math.sin(la2);
+    var lat=Math.atan2(z,Math.sqrt(x*x+y*y))/r, lng=Math.atan2(y,x)/r;
+    if(prev!==null){ while(lng-prev>180) lng-=360; while(lng-prev<-180) lng+=360; }
+    prev=lng; pts.push([lat,lng]); }
+  return pts;
+}
+function trFitAll(){
+  var pts=[]; trD.pins.forEach(function(pin){ if(pin.been.length||pin.want.length||pin.fave.length) pts.push([pin.p.lat,pin.p.lng]); });
+  if(pts.length>1) trMap.fitBounds(pts,{padding:[30,30],maxZoom:6}); else if(pts.length) trMap.setView(pts[0],5);
+}
+
+/* ---- point-in-polygon for dropped pins ---- */
+function trInRing(x,y,ring){ var ins=false; for(var i=0,j=ring.length-1;i<ring.length;j=i++){ var xi=ring[i][0],yi=ring[i][1],xj=ring[j][0],yj=ring[j][1];
+  if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi)) ins=!ins; } return ins; }
+function trInGeom(x,y,g){ if(!g) return false; var polys=g.type==="Polygon"?[g.coordinates]:g.type==="MultiPolygon"?g.coordinates:[];
+  for(var i=0;i<polys.length;i++){ if(trInRing(x,y,polys[i][0])){ var hole=false; for(var h=1;h<polys[i].length;h++) if(trInRing(x,y,polys[i][h])) hole=true; if(!hole) return true; } } return false; }
+function trLocate(ll){
+  var x=((ll.lng+540)%360)-180, y=ll.lat, out={cc:null,region:null};
+  TX.sFeat.features.forEach(function(f){ if(!out.region&&trInGeom(x,y,f.geometry)) out.region=TX.stName[f.properties.name]||null; });
+  if(out.region){ out.cc="US"; return out; }
+  TX.wFeat.features.forEach(function(f){ if(!out.cc&&trInGeom(x,y,f.geometry)) out.cc=TX.n3[f.id]||null; });
+  return out;
+}
+function trDropAt(ll){
+  trDrop=false; $("trDropBtn").classList.remove("on"); $("trMapView").classList.remove("tr-drop");
+  var loc=trLocate(ll);
+  trStartEdit({id:null,kind:"site",ref:null,name:"",region:loc.region,country_code:loc.cc,lat:Math.round(ll.lat*1e5)/1e5,lng:Math.round(((ll.lng+540)%360-180)*1e5)/1e5,note:null},true);
+}
+
+/* ---- editor ---- */
+function trOpenRef(ref){
+  for(var i=0;i<trPlaces.length;i++) if(trPlaces[i].ref===ref) return trOpenPlace(trPlaces[i]);
+  var o=TX.byRef[ref]; if(o) trStartEdit(trItemToPlace(o),false);
+}
+function trOpenPlace(p){ trStartEdit(p,false); }
+function trStartEdit(p,custom){
+  var marks={}, mk=p.id?(trMk[p.id]||{}):{};
+  TR_PEOPLE.forEach(function(x){ var m=mk[x.n]||{}; marks[x.n]={been:!!m.been,want:!!m.want,fave:!!m.fave,first_year:m.first_year||""}; });
+  trEdit={place:JSON.parse(JSON.stringify(p)),marks:marks,custom:!!custom};
+  if(trTmp){ trMap.removeLayer(trTmp); trTmp=null; }
+  if(p.lat!=null && trMap){
+    trTmp=L.circleMarker([p.lat,p.lng],{radius:13,color:"#0E7C7B",weight:2.5,fill:false,interactive:false}).addTo(trMap);
+    if(!trMap.getBounds().contains([p.lat,p.lng])) trMap.panTo([p.lat,p.lng]);
+  }
+  trRenderEditor();
+  var ed=$("trEditor"); if(ed && window.innerWidth<880) ed.scrollIntoView({behavior:"smooth",block:"start"});
+}
+function trCloseEdit(){ trEdit=null; if(trTmp&&trMap){ trMap.removeLayer(trTmp); trTmp=null; } trRenderEditor(); }
+function trRenderEditor(){
+  var host=$("trEditor"); if(!host) return;
+  if(!trEdit){ host.innerHTML=""; return; }
+  var e=trEdit, p=e.place;
+  var head=e.custom
+    ? '<div class="label" style="margin-top:2px">Name this pin</div><input id="trEdName" class="field" style="margin-bottom:8px" placeholder="e.g. Lauterbrunnen, Grandma’s farm" value="'+esc(p.name)+'">'+
+      '<div class="row" style="gap:6px;margin-bottom:6px"><button class="chip'+(p.kind==="site"?" on":"")+'" data-trk="site">Special site</button><button class="chip'+(p.kind==="city"?" on":"")+'" data-trk="city">Town / city</button></div>'+
+      '<div class="muted">'+esc([p.region?TX.st[p.region]:"",trCountryName(p.country_code)].filter(Boolean).join(", ")||"Location: open water?")+'</div>'
+    : '<div class="tr-ed-name">'+esc(trLabel(p))+'</div><div class="muted">'+esc(TR_KIND[p.kind])+(trDetail(p)&&p.kind!=="city"?" · "+esc(trDetail(p)):"")+(p.id?"":" · not on your map yet")+'</div>';
+  var rows='<div class="tr-wrow" style="padding-top:10px"><span></span><span class="tr-colh">Been</span><span class="tr-colh">Want</span><span class="tr-colh">Fave</span><span class="tr-colh">Year</span></div>'+
+    TR_PEOPLE.map(function(x){ var m=e.marks[x.n];
+      return '<div class="tr-wrow"><span class="tr-pn"><i style="background:'+x.c+'"></i>'+esc(x.n)+'</span>'+
+        ['been','want','fave'].map(function(f){ return '<button class="tr-tg f-'+f+(m[f]?' on':'')+'" data-p="'+x.n+'" data-f="'+f+'" title="'+f+'">'+({been:"✓",want:"★",fave:"♥"})[f]+'</button>'; }).join("")+
+        (m.been?'<input class="tr-yr" data-p="'+x.n+'" inputmode="numeric" maxlength="4" placeholder="year" value="'+esc(m.first_year)+'">':'<span></span>')+'</div>'; }).join("");
+  host.innerHTML='<div class="tr-ed"><div class="row between" style="align-items:flex-start;gap:8px"><div style="flex:1;min-width:0">'+head+'</div>'+
+    '<button class="btn" id="trEdX" style="padding:5px 9px">✕</button></div>'+rows+
+    '<div class="row wrapf" style="gap:6px;margin:8px 0 10px"><button class="btn" id="trEdAll" style="font-size:12px;padding:6px 10px">Everyone’s been</button>'+
+    '<button class="btn" id="trEdNone" style="font-size:12px;padding:6px 10px">Clear</button></div>'+
+    '<textarea id="trEdNote" class="field" rows="2" style="font-size:14px;margin-bottom:10px" placeholder="Note (optional) — a memory, who you visited…">'+esc(p.note||"")+'</textarea>'+
+    '<button class="primary" id="trEdSave">Save</button>'+
+    (p.id?'<div style="text-align:center;margin-top:8px"><button class="btn" id="trEdDel" style="border:none;background:none;color:var(--rust);font-size:12px">Remove this place from the map</button></div>':'')+'</div>';
+  host.querySelectorAll(".tr-tg").forEach(function(b){ b.addEventListener("click",function(){
+    var m=e.marks[this.getAttribute("data-p")], f=this.getAttribute("data-f"); trKeepTyped(); m[f]=!m[f];
+    if(f==="fave"&&m.fave) m.been=true; if(f==="been"&&!m.been) m.fave=false; trRenderEditor(); }); });
+  host.querySelectorAll(".tr-yr").forEach(function(i){ i.addEventListener("input",function(){ e.marks[this.getAttribute("data-p")].first_year=this.value.replace(/\D/g,""); }); });
+  host.querySelectorAll("[data-trk]").forEach(function(b){ b.addEventListener("click",function(){ trKeepTyped(); p.kind=this.getAttribute("data-trk"); trRenderEditor(); }); });
+  $("trEdX").addEventListener("click",trCloseEdit);
+  $("trEdAll").addEventListener("click",function(){ trKeepTyped(); TR_PEOPLE.forEach(function(x){ e.marks[x.n].been=true; }); trRenderEditor(); });
+  $("trEdNone").addEventListener("click",function(){ trKeepTyped(); TR_PEOPLE.forEach(function(x){ e.marks[x.n]={been:false,want:false,fave:false,first_year:""}; }); trRenderEditor(); });
+  $("trEdSave").addEventListener("click",trSavePlace);
+  if($("trEdDel")) $("trEdDel").addEventListener("click",trDeletePlace);
+}
+function trKeepTyped(){ if(!trEdit) return; if($("trEdName")) trEdit.place.name=$("trEdName").value; if($("trEdNote")) trEdit.place.note=$("trEdNote").value; }
+
+async function trSavePlace(){
+  trKeepTyped();
+  var e=trEdit, p=e.place, btn=$("trEdSave");
+  p.name=(p.name||"").trim(); if(!p.name){ toast("Give the pin a name"); return; }
+  var any=TR_PEOPLE.some(function(x){ var m=e.marks[x.n]; return m.been||m.want||m.fave; });
+  if(!p.id && !any){ toast("Tap ✓, ★ or ♥ for at least one person"); return; }
+  for(var k in e.marks){ var y=e.marks[k].first_year; if(y && !(+y>=1900 && +y<=2100)){ toast("Year should look like 2019"); return; } }
+  btn.disabled=true; btn.textContent="Saving…";
+  try{
+    var pid=p.id, note=(p.note||"").trim()||null;
+    if(!pid){
+      var body={kind:p.kind,ref:p.ref,name:p.name,region:p.region,country_code:p.country_code,lat:p.lat,lng:p.lng,note:note};
+      var r=await fetch(SUPABASE_URL+"/rest/v1/travel_places"+(p.ref?"?on_conflict=ref":""),{method:"POST",
+        headers:headers({Prefer:"return=representation"+(p.ref?",resolution=merge-duplicates":"")}),body:JSON.stringify(body)});
+      if(!r.ok) throw new Error("Couldn't save the place ("+r.status+")");
+      pid=(await r.json())[0].id;
+    } else {
+      var r2=await fetch(SUPABASE_URL+"/rest/v1/travel_places?id=eq."+pid,{method:"PATCH",headers:headers({Prefer:"return=minimal"}),
+        body:JSON.stringify({name:p.name,note:note,kind:p.kind})});
+      if(!r2.ok) throw new Error("Couldn't save the place ("+r2.status+")");
+    }
+    var prev=trMk[pid]||{}, now=new Date().toISOString();
+    var rows=TR_PEOPLE.filter(function(x){ var m=e.marks[x.n]; return prev[x.n]||m.been||m.want||m.fave; }).map(function(x){ var m=e.marks[x.n];
+      return {place_id:pid,person:x.n,been:m.been,want:m.want,fave:m.fave,first_year:m.been&&m.first_year?+m.first_year:null,updated_at:now}; });
+    if(rows.length){
+      var r3=await fetch(SUPABASE_URL+"/rest/v1/travel_marks?on_conflict=place_id,person",{method:"POST",
+        headers:headers({Prefer:"resolution=merge-duplicates,return=minimal"}),body:JSON.stringify(rows)});
+      if(!r3.ok) throw new Error("Couldn't save who's been ("+r3.status+")");
+    }
+    toast("Saved — "+trLabel(p)); trEdit=null; if(trTmp){ trMap.removeLayer(trTmp); trTmp=null; }
+    await loadTravel(); trRenderAll();
+  }catch(err){ toast(err.message); btn.disabled=false; btn.textContent="Save"; }
+}
+async function trDeletePlace(){
+  var p=trEdit.place;
+  if(!confirm("Remove “"+trLabel(p)+"” from the map for everyone?")) return;
+  var r=await fetch(SUPABASE_URL+"/rest/v1/travel_places?id=eq."+p.id,{method:"DELETE",headers:headers({Prefer:"return=minimal"})});
+  if(!r.ok){ toast("Couldn't remove ("+r.status+")"); return; }
+  toast("Removed"); trEdit=null; if(trTmp){ trMap.removeLayer(trTmp); trTmp=null; } await loadTravel(); trRenderAll();
+}
+
+/* ---- list of places ---- */
+function trRenderList(){
+  var host=$("trList"); if(!host) return;
+  var scope=trScope();
+  var rows=trPlaces.map(function(p){ var mk=trMk[p.id]||{}, been=[], want=[], fave=[];
+      scope.forEach(function(n){ var m=mk[n]; if(!m) return; if(m.been) been.push(n); if(m.want) want.push(n); if(m.fave) fave.push(n); });
+      return {p:p,been:been,want:want,fave:fave}; })
+    .filter(function(r){ return (trKind==="all"||r.p.kind===trKind) && ((trShow.been&&r.been.length)||(trShow.want&&r.want.length)||(trShow.fave&&r.fave.length)); })
+    .sort(function(a,b){ return trLabel(a.p).localeCompare(trLabel(b.p)); });
+  var kinds=["all","city","state","country","park","site"], kl={all:"All",city:"Cities",state:"States",country:"Countries",park:"Parks",site:"Sites"};
+  host.innerHTML='<div class="row wrapf" style="gap:5px;margin-top:14px">'+kinds.map(function(k){ return '<button class="chip'+(trKind===k?" on":"")+'" data-trkind="'+k+'" style="padding:4px 10px;font-size:11.5px">'+kl[k]+'</button>'; }).join("")+'</div>'+
+    '<div class="muted" style="margin-top:8px">'+rows.length+' place'+(rows.length===1?"":"s")+(trWho==="all"?"":" for "+esc(trWho))+'</div>'+
+    '<div class="tr-list">'+(rows.length?rows.map(function(r){
+      var dots=r.been.map(function(n){ return '<i style="background:'+trColor(n)+'" title="'+esc(n)+' has been"></i>'; }).join("")+
+        r.want.filter(function(n){ return r.been.indexOf(n)<0; }).map(function(n){ return '<i class="w" style="border-color:'+trColor(n)+'" title="'+esc(n)+' wants to go"></i>'; }).join("");
+      return '<button class="tr-li" data-pid="'+r.p.id+'"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(r.fave.length?'<span style="color:var(--rust)">♥</span> ':'')+esc(trLabel(r.p))+
+        ' <span class="muted">'+esc(TR_KIND[r.p.kind])+'</span></span><span class="tr-dots">'+dots+'</span></button>'; }).join("")
+      :'<div class="muted" style="padding:14px 4px">Nothing here yet. Search above, tap a country or state on the map, or drop a pin.</div>')+'</div>';
+  host.querySelectorAll("[data-trkind]").forEach(function(b){ b.addEventListener("click",function(){ trKind=this.getAttribute("data-trkind"); trRenderList(); }); });
+  host.querySelectorAll(".tr-li").forEach(function(b){ b.addEventListener("click",function(){ var id=this.getAttribute("data-pid");
+    for(var i=0;i<trPlaces.length;i++) if(trPlaces[i].id===id){ var p=trPlaces[i]; trOpenPlace(p); if(p.lat!=null) trMap.setView([p.lat,p.lng],Math.max(trMap.getZoom(),5)); } }); });
+}
+
+/* ---- stats ---- */
+function trScopedFlights(persons){ persons=persons||trScope();
+  return trFlights.filter(function(f){ return (f.people||[]).some(function(n){ return persons.indexOf(n)>=0; }); }); }
+function trStatsFor(persons){
+  var S={co:{},cont:{},st:{},parks:0,cities:0,sites:0,places:0,area:0,far:null,north:null,south:null,newYr:0,want:0,fave:0,only:0,together:0};
+  var yr=+localDate().slice(0,4);
+  trPlaces.forEach(function(p){
+    var mk=trMk[p.id]||{}, been=persons.filter(function(n){ return mk[n]&&mk[n].been; });
+    if(persons.some(function(n){ return mk[n]&&mk[n].want&&!mk[n].been; })) S.want++;
+    if(persons.some(function(n){ return mk[n]&&mk[n].fave; })) S.fave++;
+    if(!been.length) return;
+    S.places++;
+    var cc=p.kind==="state"?"US":p.country_code;
+    if(cc){ S.co[cc]=1; var ci=TX.cc[cc]; if(ci&&ci.cont) S.cont[ci.cont]=1; }
+    if((cc==="US")&&p.region&&p.region!=="DC") S.st[p.region]=1;
+    if(p.kind==="park") S.parks++; if(p.kind==="city") S.cities++; if(p.kind==="site") S.sites++;
+    if(p.lat!=null&&p.kind!=="country"){
+      var d=trMiles(TR_HOME.lat,TR_HOME.lng,p.lat,p.lng);
+      if(!S.far||d>S.far.d) S.far={d:d,p:p};
+      if(!S.north||p.lat>S.north.lat) S.north=p; if(!S.south||p.lat<S.south.lat) S.south=p;
+    }
+    if(been.some(function(n){ var m=mk[n]; return m.first_year?+m.first_year===yr:String(m.created_at||"").slice(0,4)===String(yr); })) S.newYr++;
+    var everyone=TR_PEOPLE.filter(function(x){ return mk[x.n]&&mk[x.n].been; });
+    if(persons.length===1 && everyone.length===1) S.only++;
+    if(everyone.length===TR_PEOPLE.length) S.together++;
+  });
+  S.nCo=0; for(var c in S.co){ var i=TX.cc[c]; if(i&&i.un){ S.nCo++; S.area+=i.area; } }
+  S.nTerr=Object.keys(S.co).length-S.nCo;
+  S.nCont=Object.keys(S.cont).length; S.nSt=Object.keys(S.st).length;
+  S.pct=TX.total195?S.area/TX.total195*100:0;
+  var fl=trScopedFlights(persons), al={}, ap={}; S.flights=fl.length; S.miles=0; S.longest=null;
+  fl.forEach(function(f){ S.miles+=f.distance_mi||0; if(f.airline) al[trNorm(f.airline)]=f.airline;
+    if(f.from_code) ap[f.from_code]=1; if(f.to_code) ap[f.to_code]=1;
+    if(f.distance_mi&&(!S.longest||f.distance_mi>S.longest.distance_mi)) S.longest=f; });
+  S.nAl=Object.keys(al).length; S.nAp=Object.keys(ap).length;
+  return S;
+}
+function trTile(icon,num,label,sub,of){
+  return '<div class="tr-st"><span class="ic">'+icon+'</span><div class="n">'+num+(of?' <small>/ '+of+'</small>':'')+'</div><div class="l">'+label+'</div>'+
+    (of?'<div class="pb"><i style="width:'+Math.min(100,(parseFloat(String(num).replace(/,/g,""))||0)/of*100).toFixed(1)+'%"></i></div>':'')+
+    (sub?'<div class="s">'+sub+'</div>':'')+'</div>';
+}
+function trRenderStats(){
+  var host=$("trStats"); if(!host) return;
+  var S=trStatsFor(trScope()), yr=localDate().slice(0,4), who=trWho==="all"?"all of us":trWho;
+  var conts=Object.keys(S.cont).map(function(k){ return TR_CONT[k]; }).join(", ");
+  var html='<div class="tr-h">'+(trWho==="all"?"The Nielsens, together":esc(trWho)+"’s travels")+'</div><div class="tr-stats">'+
+    trTile("🌍",S.nCo,"countries",S.nTerr?"+ "+S.nTerr+" territor"+(S.nTerr===1?"y":"ies"):"",195)+
+    trTile("🧭",S.nCont,"continents",esc(conts)||"",7)+
+    trTile("🇺🇸",S.nSt,"U.S. states","",50)+
+    trTile("🏞️",S.parks,"national parks","",63)+
+    trTile("🏙️",trN(S.cities),"cities & towns",S.sites?S.sites+" special site"+(S.sites===1?"":"s")+" too":"")+
+    trTile("📊",S.pct.toFixed(S.pct<10?1:0)+"%","of the world","by land area of the countries "+(trWho==="all"?"we’ve":esc(trWho)+" has")+" visited")+
+    trTile("✈️",trN(S.miles),"miles flown",S.miles?(S.miles/24901).toFixed(1)+"× around the Earth":"log flights to grow this")+
+    trTile("📍",S.far?trN(S.far.d):"—","miles from home, farthest",S.far?esc(trLabel(S.far.p)):"")+
+    trTile("↕️",S.north?Math.round(S.north.lat)+"° / "+Math.round(S.south.lat)+"°":"—","farthest north / south",S.north?esc(trLabel(S.north))+" · "+esc(trLabel(S.south)):"")+
+    trTile("✨",S.newYr,"new places in "+yr,"")+
+    trTile("★",S.want,"on the want-to-go list","")+
+    trTile("♥",S.fave,"favorites","")+
+    (trWho==="all"?trTile("👨‍👩‍👧‍👦",S.together,"places all five of us have been",""):trTile("🏅",S.only,"places only "+esc(trWho)+" has been",""))+
+    '</div>';
+  // family leaderboard
+  var cols=[["Countries","nCo"],["States","nSt"],["Parks","parks"],["Cities","cities"],["Flights","flights"],["Airlines","nAl"],["Miles","miles"]];
+  var per=TR_PEOPLE.map(function(x){ return {n:x.n,c:x.c,s:trStatsFor([x.n])}; });
+  var max={}; cols.forEach(function(c){ max[c[1]]=Math.max.apply(null,per.map(function(r){ return r.s[c[1]]||0; })); });
+  html+='<div class="tr-h">Family scoreboard</div><div class="panel" style="overflow-x:auto"><table class="tr-tbl"><tr><th></th>'+cols.map(function(c){ return '<th>'+c[0]+'</th>'; }).join("")+'</tr>'+
+    per.map(function(r){ return '<tr><td><span class="tr-pn"><i style="background:'+r.c+'"></i>'+esc(r.n)+'</span></td>'+cols.map(function(c){ var v=r.s[c[1]]||0;
+      return '<td class="num'+(v&&v===max[c[1]]?' top':'')+'">'+trN(v)+'</td>'; }).join("")+'</tr>'; }).join("")+'</table></div>';
+  host.innerHTML=html;
+}
+
+/* ---- flights ---- */
+function trBlankFlight(){ return {id:null,date:"",year:"",airline:"",airline_code:"",flight_no:"",from:"",to:"",people:trWho==="all"?[]:[trWho],note:""}; }
+function trApLabel(code){ var a=TX&&TX.ap[code]; return a?code+" — "+(a.city||a.name):code; }
+function trFlightWhen(f){ if(f.flight_date){ var p=f.flight_date.split("-"); return MON3[+p[1]-1]+" "+(+p[2])+", "+p[0]; } return f.flight_year?String(f.flight_year):"—"; }
+function trFlightKey(f){ return f.flight_date||(f.flight_year?f.flight_year+"-99":"0000"); }
+function trRenderFlights(){
+  var host=$("trFlightView"); if(!host) return;
+  if(!trFF) trFF=trBlankFlight();
+  var F=trFF;
+  var form='<div class="panel" style="padding:14px 16px"><div class="row between" style="margin-bottom:10px"><div class="panel-title">'+(F.id?"Edit flight":"Log a flight")+'</div>'+
+    '<div class="muted">Everything is optional — add what you remember.</div></div>'+
+    '<div class="tr-ff">'+
+      '<div><div class="label">Date</div><input id="ffDate" type="date" class="field" value="'+esc(F.date)+'"></div>'+
+      '<div><div class="label">or just the year</div><input id="ffYear" class="field" inputmode="numeric" maxlength="4" placeholder="2014" value="'+esc(F.year)+'"></div>'+
+      '<div class="w2 tr-search"><div class="label">Airline</div><input id="ffAir" class="field" autocomplete="off" placeholder="Delta, Southwest, Emirates…" value="'+esc(F.airline)+'"><div id="ffAirS" class="tr-sug hidden"></div></div>'+
+      '<div class="tr-search"><div class="label">From</div><input id="ffFrom" class="field" autocomplete="off" placeholder="DFW or Dallas" value="'+esc(F.from?trApLabel(F.from):"")+'"><div id="ffFromS" class="tr-sug hidden"></div></div>'+
+      '<div class="tr-search"><div class="label">To</div><input id="ffTo" class="field" autocomplete="off" placeholder="LAX or Los Angeles" value="'+esc(F.to?trApLabel(F.to):"")+'"><div id="ffToS" class="tr-sug hidden"></div></div>'+
+      '<div><div class="label">Flight #</div><input id="ffNo" class="field" placeholder="DL 1234" value="'+esc(F.flight_no)+'"></div>'+
+      '<div><div class="label">Miles</div><div id="ffMi" style="padding:11px 2px;font-weight:800">'+(trFFMiles()?trN(trFFMiles()):'<span class="muted">from the airports</span>')+'</div></div>'+
+    '</div>'+
+    '<div class="label">Who flew</div><div class="row wrapf" style="gap:6px;margin-bottom:12px">'+TR_PEOPLE.map(function(x){ var on=F.people.indexOf(x.n)>=0;
+      return '<button class="chip'+(on?" on":"")+'" data-ffp="'+x.n+'"'+(on?' style="background:'+x.c+';border-color:'+x.c+'"':'')+'><span class="tr-pc"><i style="background:'+x.c+'"></i>'+x.n+'</span></button>'; }).join("")+
+      '<button class="btn" id="ffAllP" style="font-size:12px;padding:6px 10px">Whole family</button></div>'+
+    '<input id="ffNote" class="field" placeholder="Note (optional)" value="'+esc(F.note)+'">'+
+    '<div class="row wrapf" style="gap:8px"><button class="primary" id="ffSave" style="width:auto;flex:1">Save flight</button>'+
+    '<button class="btn" id="ffSaveRet">Save + log return</button>'+(F.id?'<button class="btn" id="ffCancel">Cancel</button><button class="btn" id="ffDel" style="color:var(--rust)">Delete</button>':'')+'</div></div>';
+  var list=trScopedFlights().slice().sort(function(a,b){ return trFlightKey(b).localeCompare(trFlightKey(a)); });
+  var S=trStatsFor(trScope()), al={}, apc={};
+  list.forEach(function(f){ if(f.airline){ var k=trNorm(f.airline); al[k]=al[k]||{n:f.airline,c:0}; al[k].c++; }
+    [f.from_code,f.to_code].forEach(function(c){ if(c) apc[c]=(apc[c]||0)+1; }); });
+  var alArr=Object.keys(al).map(function(k){ return al[k]; }).sort(function(a,b){ return b.c-a.c||a.n.localeCompare(b.n); });
+  var apArr=Object.keys(apc).sort(function(a,b){ return apc[b]-apc[a]; });
+  var stats='<div class="tr-stats">'+trTile("🛫",S.flights,"flights logged","")+trTile("✈️",trN(S.miles),"miles flown",S.miles?(S.miles/24901).toFixed(1)+"× around the Earth":"")+
+    trTile("🏷️",S.nAl,"different airlines",alArr[0]?"most flown: "+esc(alArr[0].n):"")+trTile("🛩️",S.nAp,"airports",apArr[0]?"busiest: "+esc(trApLabel(apArr[0])):"")+
+    trTile("📏",S.longest?trN(S.longest.distance_mi):"—","longest flight (miles)",S.longest?esc(S.longest.from_code+" → "+S.longest.to_code):"")+'</div>';
+  var cloud='<div class="tr-h">Airlines '+(trWho==="all"?"we’ve":esc(trWho)+" has")+' flown</div><div class="panel">'+(alArr.length?'<div class="tr-cloud">'+alArr.map(function(a){ return '<span>'+esc(a.n)+' <b>×'+a.c+'</b></span>'; }).join("")+'</div>':'<div class="muted" style="padding:14px">None logged yet.</div>')+'</div>';
+  var rows='<div class="tr-h">Flight log</div><div class="panel"><div class="tr-fl h"><span>When</span><span>Airline</span><span>Route</span><span style="text-align:right">Miles</span><span>Who</span><span></span></div>'+
+    (list.length?list.map(function(f){
+      return '<div class="tr-fl"><span>'+esc(trFlightWhen(f))+'</span><span class="c-air" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.airline||"—")+(f.flight_no?' <span class="muted">'+esc(f.flight_no)+'</span>':'')+'</span>'+
+        '<span>'+((f.from_code||f.to_code)?esc(f.from_code||"?")+' → '+esc(f.to_code||"?"):'<span class="muted">route not logged</span>')+'</span><span class="num" style="text-align:right">'+(f.distance_mi?trN(f.distance_mi):"")+'</span>'+
+        '<span class="c-who tr-dots">'+(f.people||[]).map(function(n){ return '<i style="background:'+trColor(n)+'" title="'+esc(n)+'"></i>'; }).join("")+'</span>'+
+        '<button class="btn" data-ffe="'+f.id+'" style="padding:4px 8px;font-size:11.5px">edit</button></div>'; }).join("")
+      :'<div class="muted" style="padding:14px">No flights yet'+(trWho==="all"?"":" for "+esc(trWho))+'.</div>')+'</div>';
+  host.innerHTML=form+'<div style="margin-top:4px">'+stats+'</div>'+cloud+rows;
+  trWireFlights();
+}
+function trFFMiles(){ var a=TX&&TX.ap[trFF.from], b=TX&&TX.ap[trFF.to]; return a&&b?Math.round(trMiles(a.lat,a.lng,b.lat,b.lng)):0; }
+function trAirlineSearch(q){
+  var qn=trNorm(q); if(qn.length<2) return [];
+  var qu=q.trim().toUpperCase(), res=[];
+  TD.airlines.forEach(function(a){ var nm=trNorm(a[0]), t;
+    if(a[1]===qu||a[2]===qu) t=0; else if(nm.indexOf(qn)===0) t=1; else if(nm.indexOf(" "+qn)>0) t=2; else if(qn.length>=3&&nm.indexOf(qn)>0) t=3; else return;
+    res.push({t:t,a:a}); });
+  // exact code first, then real (IATA-coded) and current airlines, then shorter names (“Delta Air Lines” before “Delta Air Charter”)
+  res.sort(function(x,y){ return x.t-y.t||(!!y.a[1]-!!x.a[1])||(y.a[4]-x.a[4])||((y.a[3]==="US")-(x.a[3]==="US"))||x.a[0].length-y.a[0].length||x.a[0].localeCompare(y.a[0]); });
+  return res.slice(0,12).map(function(r){ var a=r.a; return {label:a[0],sub:[a[1]||a[2],trCountryName(a[3]),a[4]?"":"former"].filter(Boolean).join(" · "),name:a[0],code:a[1]||a[2]}; });
+}
+function trAirportSearch(q){
+  var qn=trNorm(q); if(qn.length<2) return [];
+  var qu=q.trim().toUpperCase().slice(0,3), res=[];
+  TD.airports.forEach(function(a){ var t;
+    if(a[0]===qu&&q.trim().length<=3) t=0; else if(trNorm(a[2]).indexOf(qn)===0) t=1; else if(trNorm(a[1]).indexOf(qn)===0) t=2; else if(qn.length>=4&&trNorm(a[1]).indexOf(qn)>=0) t=3; else return;
+    res.push({t:t,a:a}); });
+  res.sort(function(x,y){ return x.t-y.t||(/intl/i.test(y.a[1])-/intl/i.test(x.a[1])); });
+  return res.slice(0,12).map(function(r){ var a=r.a; return {label:a[0]+" — "+a[2],sub:a[1]+(a[3]&&a[3]!=="US"?" · "+trCountryName(a[3]):""),code:a[0]}; });
+}
+function trWireFlights(){
+  var F=trFF;
+  function keep(){ F.date=$("ffDate").value; F.year=$("ffYear").value.replace(/\D/g,""); F.flight_no=$("ffNo").value; F.note=$("ffNote").value;
+    var t=$("ffAir").value.trim(); if(t!==F.airline){ F.airline=t; F.airline_code=""; } }
+  $("ffDate").addEventListener("change",function(){ if(this.value) $("ffYear").value=this.value.slice(0,4); });
+  trSuggest($("ffAir"),$("ffAirS"),trAirlineSearch,function(it){ $("ffAir").value=it.name; F.airline=it.name; F.airline_code=it.code; });
+  function apPick(which){ return function(it){ keep(); F[which]=it.code; trRenderFlights(); }; }
+  trSuggest($("ffFrom"),$("ffFromS"),trAirportSearch,apPick("from"));
+  trSuggest($("ffTo"),$("ffToS"),trAirportSearch,apPick("to"));
+  ["ffFrom","ffTo"].forEach(function(id){ $(id).addEventListener("change",function(){ // typed a bare code without picking
+    var v=this.value.trim().toUpperCase(), w=id==="ffFrom"?"from":"to";
+    if(!v) F[w]=""; else if(/^[A-Z]{3}$/.test(v)) F[w]=v; }); });
+  document.querySelectorAll("[data-ffp]").forEach(function(b){ b.addEventListener("click",function(){ keep(); var n=this.getAttribute("data-ffp"), i=F.people.indexOf(n);
+    if(i>=0) F.people.splice(i,1); else F.people.push(n); trRenderFlights(); }); });
+  $("ffAllP").addEventListener("click",function(){ keep(); F.people=TR_PEOPLE.map(function(x){ return x.n; }); trRenderFlights(); });
+  $("ffSave").addEventListener("click",function(){ keep(); trSaveFlight(false); });
+  $("ffSaveRet").addEventListener("click",function(){ keep(); trSaveFlight(true); });
+  if($("ffCancel")) $("ffCancel").addEventListener("click",function(){ trFF=trBlankFlight(); trRenderFlights(); });
+  if($("ffDel")) $("ffDel").addEventListener("click",trDeleteFlight);
+  document.querySelectorAll("[data-ffe]").forEach(function(b){ b.addEventListener("click",function(){ var id=this.getAttribute("data-ffe");
+    trFlights.forEach(function(f){ if(f.id===id) trFF={id:f.id,date:f.flight_date||"",year:f.flight_year?String(f.flight_year):"",airline:f.airline||"",airline_code:f.airline_code||"",
+      flight_no:f.flight_no||"",from:f.from_code||"",to:f.to_code||"",people:(f.people||[]).slice(),note:f.note||""}; });
+    trRenderFlights(); window.scrollTo({top:$("trFlightView").offsetTop-10,behavior:"smooth"}); }); });
+}
+async function trSaveFlight(addReturn){
+  var F=trFF;
+  if(!F.people.length){ toast("Tap who was on this flight"); return; }
+  if(!F.airline && !(F.from&&F.to)){ toast("Add at least the airline, or where from and to"); return; }
+  if(F.year && !(+F.year>=1900&&+F.year<=2100)){ toast("Year should look like 2014"); return; }
+  var body={flight_date:F.date||null,flight_year:F.date?+F.date.slice(0,4):(F.year?+F.year:null),airline:F.airline||null,airline_code:F.airline_code||null,
+    flight_no:(F.flight_no||"").trim()||null,from_code:F.from||null,to_code:F.to||null,distance_mi:trFFMiles()||null,people:F.people,note:(F.note||"").trim()||null};
+  var r=await fetch(SUPABASE_URL+"/rest/v1/travel_flights"+(F.id?"?id=eq."+F.id:""),{method:F.id?"PATCH":"POST",headers:headers({Prefer:"return=minimal"}),body:JSON.stringify(body)});
+  if(!r.ok){ toast("Couldn't save the flight ("+r.status+")"); return; }
+  toast(F.id?"Flight updated":"Flight saved");
+  trFF=addReturn?{id:null,date:"",year:F.date?F.date.slice(0,4):F.year,airline:F.airline,airline_code:F.airline_code,flight_no:"",from:F.to,to:F.from,people:F.people.slice(),note:""}:trBlankFlight();
+  await loadTravel(); trRenderFlights(); trRenderMap();
+}
+async function trDeleteFlight(){
+  if(!confirm("Delete this flight from the log?")) return;
+  var r=await fetch(SUPABASE_URL+"/rest/v1/travel_flights?id=eq."+trFF.id,{method:"DELETE",headers:headers({Prefer:"return=minimal"})});
+  if(!r.ok){ toast("Couldn't delete ("+r.status+")"); return; }
+  toast("Deleted"); trFF=trBlankFlight(); await loadTravel(); trRenderFlights(); trRenderMap();
+}
+
+/* ---- page ---- */
+function trSkeleton(){
+  $("viewTravel").innerHTML=
+    '<div class="card tr-top"><div class="tr-chips" id="trWho"></div><div class="tr-chips" id="trShowC"></div><div class="tr-chips" id="trSubC"></div></div>'+
+    '<div id="trMsg"></div>'+
+    '<div id="trMapView"><div class="tr-main"><div class="card tr-mapwrap"><div id="trMap"></div><div class="tr-maptools">'+
+      '<button class="btn" id="trDropBtn">📍 Drop a pin</button><button class="btn" id="trFitBtn">Zoom to our places</button><button class="btn" id="trWorldBtn">Whole world</button>'+
+      '<button class="btn" id="trPathBtn">✈ Flight paths</button><span class="muted" style="align-self:center">Tap a country or state to mark it.</span></div></div>'+
+      '<div class="card tr-side"><div class="tr-search"><div class="label">Add a place</div><input id="trQ" class="field" autocomplete="off" placeholder="City, state, country, park, landmark…">'+
+      '<div id="trQS" class="tr-sug hidden"></div></div><div id="trEditor"></div><div id="trList"></div></div></div>'+
+      '<div id="trStats"></div></div>'+
+    '<div id="trFlightView" class="hidden"></div>';
+  trSuggest($("trQ"),$("trQS"),function(q){ return TX?trSearch(q):[]; },function(it){
+    $("trQ").value=""; if(it.saved){ trOpenPlace(it.saved); if(it.saved.lat!=null) trMap.setView([it.saved.lat,it.saved.lng],Math.max(trMap.getZoom(),5)); return; }
+    var p=trItemToPlace(it.item); trStartEdit(p,false);
+    if(p.kind==="state"||p.kind==="country"){ var lyr=p.kind==="state"?trStLayer:trCoLayer; lyr.eachLayer(function(l){ var f=l.feature;
+      if((p.kind==="state"&&TX.stName[f.properties.name]===p.region)||(p.kind==="country"&&TX.n3[f.id]===p.country_code)) trMap.fitBounds(l.getBounds(),{maxZoom:5}); }); }
+    else if(p.lat!=null) trMap.setView([p.lat,p.lng],Math.max(trMap.getZoom(),6));
+  });
+  $("trDropBtn").addEventListener("click",function(){ trDrop=!trDrop; this.classList.toggle("on",trDrop); $("trMapView").classList.toggle("tr-drop",trDrop);
+    if(trDrop) toast("Tap the map where the pin goes"); });
+  $("trFitBtn").addEventListener("click",function(){ trFitAll(); });
+  $("trWorldBtn").addEventListener("click",function(){ trMap.setView([34,-40],2); });
+  $("trPathBtn").addEventListener("click",function(){ trPaths=!trPaths; this.classList.toggle("on",trPaths); trRenderMap(); });
+}
+function trRenderTop(){
+  $("trWho").innerHTML='<button class="chip'+(trWho==="all"?" on":"")+'" data-trw="all">Family</button>'+TR_PEOPLE.map(function(x){ var on=trWho===x.n;
+    return '<button class="chip'+(on?" on":"")+'" data-trw="'+x.n+'"'+(on?' style="background:'+x.c+';border-color:'+x.c+'"':'')+'><span class="tr-pc"><i style="background:'+x.c+'"></i>'+x.n+'</span></button>'; }).join("");
+  $("trShowC").innerHTML=[["been","✓ Been"],["want","★ Want"],["fave","♥ Fave"]].map(function(s){ return '<button class="chip'+(trShow[s[0]]?" on":"")+'" data-trs="'+s[0]+'">'+s[1]+'</button>'; }).join("");
+  $("trSubC").innerHTML='<button class="chip'+(trSub==="map"?" on":"")+'" data-trsub="map">Map &amp; places</button><button class="chip'+(trSub==="flights"?" on":"")+'" data-trsub="flights">Flights</button>';
+  $("viewTravel").querySelectorAll("[data-trw]").forEach(function(b){ b.addEventListener("click",function(){ trWho=this.getAttribute("data-trw");
+    if(trFF&&!trFF.id&&!trFF.airline&&!trFF.from) trFF=null; trRenderAll(); }); });
+  $("viewTravel").querySelectorAll("[data-trs]").forEach(function(b){ b.addEventListener("click",function(){ var k=this.getAttribute("data-trs"); trShow[k]=!trShow[k]; trRenderAll(); }); });
+  $("viewTravel").querySelectorAll("[data-trsub]").forEach(function(b){ b.addEventListener("click",function(){ trSub=this.getAttribute("data-trsub"); trRenderAll(); }); });
+  $("trShowC").style.display=trSub==="map"?"":"none";
+}
+function trRenderAll(){
+  trRenderTop();
+  $("trMapView").classList.toggle("hidden",trSub!=="map");
+  $("trFlightView").classList.toggle("hidden",trSub!=="flights");
+  if(trSub==="map"){ trRenderMap(); trRenderEditor(); trRenderList(); trRenderStats(); setTimeout(function(){ if(trMap) trMap.invalidateSize(); },60); }
+  else trRenderFlights();
+}
+async function renderTravel(){
+  if(!trInited){ trSkeleton(); trInited=true; }
+  if(trBusy) return;
+  if(!TD||!window.L||trDirty){
+    trBusy=true;
+    $("trMsg").innerHTML='<div class="card" style="padding:14px 16px;margin-bottom:14px;font-size:13.5px">Loading the map…</div>';
+    try{
+      await trEnsureLibs(); await trEnsureData();
+      if(trDirty){ await loadTravel(); trDirty=false; }
+      $("trMsg").innerHTML="";
+    }catch(e){
+      $("trMsg").innerHTML='<div class="alert"><b>Travel couldn’t load.</b> '+esc(e.message)+'</div>'; trBusy=false; return;
+    }
+    trBusy=false;
+  }
+  if(trMissing){
+    $("trMsg").innerHTML='<div class="card" style="padding:18px 20px;font-size:13.5px;line-height:1.6;margin-bottom:14px"><b>Travel needs its database tables.</b> Run the SQL in <b>Travel_Guide.md</b> in Supabase, then tap Refresh.</div>';
+    $("trMapView").classList.add("hidden"); $("trFlightView").classList.add("hidden"); return;
+  }
+  trInitMap(); trRenderAll();
+}
 
 (function init(){
   var t=null; try{ t=localStorage.getItem("ledger_token"); }catch(e){}
