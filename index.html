@@ -4977,7 +4977,11 @@ var TR_CABINS=[["","—"],["economy","Economy"],["premium","Premium economy"],["
 var TR_THROUGH=["Airline website / app","Chase Travel","Capital One Travel","Amex Travel","Citi Travel","Expedia","Priceline","Booking.com","Kayak","Travel agent","Military travel (DTS / SATO)","Partner award booking"];
 function trBlankSeg(prev){ return {id:null,date:prev?prev.date:"",year:prev?prev.year:"",airline:prev?prev.airline:"",airline_code:prev?prev.airline_code:"",flight_no:"",
   from:prev?prev.to:"",to:"",aircraft:"",cabin:prev?prev.cabin:"",seat:"",note:""}; }
-function trBlankBooking(){ return {id:null,conf:"",ticket:"",through:"",bdate:"",people:trWho==="all"?[]:[trWho],cash:"",cur:"USD",pts:"",prog:"",note:"",segs:[trBlankSeg()],removed:[]}; }
+function trBlankBooking(){ return {id:null,conf:"",ticket:"",through:"",bdate:"",people:trWho==="all"?[]:[trWho],free:[],cash:"",cur:"USD",pts:"",prog:"",note:"",segs:[trBlankSeg()],removed:[]}; }
+// Share of a booking's price that belongs to one person: split among the travelers who paid (lap infants etc. = 0).
+function trPayers(b){ var free=b.free_people||[]; return (b.people||[]).filter(function(n){ return free.indexOf(n)<0; }); }
+function trShare(b,persons){ if(!persons||persons.length===TR_PEOPLE.length) return 1; var pay=trPayers(b);
+  if(!pay.length) return (b.people||[]).length?0:1; return pay.filter(function(n){ return persons.indexOf(n)>=0; }).length/pay.length; }
 function trApLabel(code){ var a=TX&&TX.ap[code]; return a?code+" — "+(a.city||a.name):code; }
 function trFlightWhen(f){ if(f.flight_date){ var p=f.flight_date.split("-"); return MON3[+p[1]-1]+" "+(+p[2])+", "+p[0]; } return f.flight_year?String(f.flight_year):"—"; }
 function trFlightKey(f){ return f.flight_date||(f.flight_year?f.flight_year+"-99":"0000"); }
@@ -5021,6 +5025,8 @@ function trRenderFlights(){
     '<div class="label">Who’s on this booking</div><div class="row wrapf" style="gap:6px;margin-bottom:12px">'+TR_PEOPLE.map(function(x){ var on=F.people.indexOf(x.n)>=0;
       return '<button class="chip'+(on?" on":"")+'" data-ffp="'+x.n+'"'+(on?' style="background:'+x.c+';border-color:'+x.c+'"':'')+'><span class="tr-pc"><i style="background:'+x.c+'"></i>'+x.n+'</span></button>'; }).join("")+
       '<button class="btn" id="ffAllP" style="font-size:12px;padding:6px 10px">Whole family</button></div>'+
+    (F.people.length>1?'<div class="label">No ticket cost <span class="muted" style="font-weight:600">— lap infant, companion pass, etc. The price is split among everyone else.</span></div><div class="row wrapf" style="gap:6px;margin-bottom:12px">'+
+      F.people.map(function(n){ var on=F.free.indexOf(n)>=0; return '<button class="chip'+(on?" on":"")+'" data-fffree="'+n+'"'+(on?' style="background:var(--slate);border-color:var(--slate)"':'')+'>'+(on?"✓ ":"")+esc(n)+'</button>'; }).join("")+'</div>':'')+
     '<div class="tr-ff">'+
       '<div><div class="label">Confirmation #</div><input id="bkConf" class="field" placeholder="ABC123" value="'+esc(F.conf)+'"></div>'+
       '<div><div class="label">Ticket #</div><input id="bkTicket" class="field" inputmode="numeric" placeholder="0062345678901" value="'+esc(F.ticket)+'"></div>'+
@@ -5059,10 +5065,12 @@ function trRenderFlights(){
   var clouds=cloud("Airlines "+we+" flown",alArr,"None logged yet.")+cloud("Aircraft "+we+" flown",acArr,"None logged yet — edit a booking to add aircraft.")+
     (Object.keys(cab).length?cloud("Cabins",TR_CABINS.filter(function(c){ return cab[c[0]]; }).map(function(c){ return {n:c[1],c:cab[c[0]]}; }),""):"");
   var log='<div class="tr-h">Flight log</div>'+(bks.length?bks.map(function(b){
-      var ss=trBkSegs[b.id]||[], f0=ss[0], mi=ss.reduce(function(t,s){ return t+(s.distance_mi||0); },0), cost=trCostText(b);
+      var ss=trBkSegs[b.id]||[], f0=ss[0], mi=ss.reduce(function(t,s){ return t+(s.distance_mi||0); },0), cost=trCostText(b), sh=trShare(b,trScope());
+      if(cost&&sh!==1) cost=(sh===0?"no cost for "+trWho:trWho+"’s share: "+trCostText({cash_amount:b.cash_amount!=null?Math.round(b.cash_amount*sh*100)/100:null,cash_currency:b.cash_currency,points_amount:b.points_amount?Math.round(b.points_amount*sh):null,points_program:b.points_program}))+" (of "+cost+")";
+      var freeTxt=(b.free_people||[]).filter(function(n){ return (b.people||[]).indexOf(n)>=0; });
       var meta=[b.confirmation?"Conf. "+esc(b.confirmation):"",b.booked_through?esc(b.booked_through):"",b.booking_date?"booked "+esc(trFlightWhen({flight_date:b.booking_date})):""].filter(Boolean).join(" · ");
       return '<div class="panel tr-bk"><div class="tr-bk-h"><div style="min-width:0"><div class="tr-bk-t">'+esc(f0?trFlightWhen(f0):"—")+' · '+esc(trRoute(b))+'</div>'+
-        '<div class="muted">'+[ss.length+" flight"+(ss.length===1?"":"s"),mi?trN(mi)+" mi":"",meta].filter(Boolean).join(" · ")+(b.note?'<br>'+esc(b.note):'')+'</div></div>'+
+        '<div class="muted">'+[ss.length+" flight"+(ss.length===1?"":"s"),mi?trN(mi)+" mi":"",meta,freeTxt.length?esc(freeTxt.join(", "))+": no ticket cost":""].filter(Boolean).join(" · ")+(b.note?'<br>'+esc(b.note):'')+'</div></div>'+
         '<div class="tr-bk-r"><span class="num" style="font-weight:800">'+esc(cost)+'</span><span class="tr-dots">'+(b.people||[]).map(function(n){ return '<i style="background:'+trColor(n)+'" title="'+esc(n)+'"></i>'; }).join("")+'</span>'+
         '<button class="btn" data-bke="'+b.id+'" style="padding:4px 9px;font-size:11.5px">edit</button></div></div>'+
         ss.map(function(s){ return '<div class="tr-fl2"><span>'+esc(trFlightWhen(s))+'</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.airline||"—")+(s.flight_no?' <span class="muted">'+esc(s.flight_no)+'</span>':'')+'</span>'+
@@ -5076,16 +5084,17 @@ function trRenderFlights(){
 function trCostSection(bks){
   var cash={}, pts={}, yrs={}, usdC=0, usdMi=0, n=0;
   bks.forEach(function(b){
-    var hasC=b.cash_amount!=null, hasP=!!b.points_amount; if(!hasC&&!hasP) return; n++;
+    var hasC=b.cash_amount!=null, hasP=!!b.points_amount; if(!hasC&&!hasP) return;
+    var sh=trShare(b,trScope()); if(sh===0) return; n++;
     var f0=trBkFirst(b), y=f0?(f0.flight_year||(f0.flight_date?+f0.flight_date.slice(0,4):0)):0; y=y||"?";
     var Y=yrs[y]=yrs[y]||{n:0,cash:{},pts:0}; Y.n++;
-    if(hasC){ var c=b.cash_currency||"USD"; cash[c]=(cash[c]||0)+Number(b.cash_amount); Y.cash[c]=(Y.cash[c]||0)+Number(b.cash_amount); }
-    if(hasP){ var pg=b.points_program||"Points"; pts[pg]=(pts[pg]||0)+Number(b.points_amount); Y.pts+=Number(b.points_amount); }
+    if(hasC){ var c=b.cash_currency||"USD", amt=Number(b.cash_amount)*sh; cash[c]=(cash[c]||0)+amt; Y.cash[c]=(Y.cash[c]||0)+amt; }
+    if(hasP){ var pg=b.points_program||"Points", pa=Math.round(Number(b.points_amount)*sh); pts[pg]=(pts[pg]||0)+pa; Y.pts+=pa; }
     var mi=(trBkSegs[b.id]||[]).reduce(function(t,s){ return t+(s.distance_mi||0); },0);
-    if(hasC&&!hasP&&(b.cash_currency||"USD")==="USD"&&mi){ usdC+=Number(b.cash_amount); usdMi+=mi; }
+    if(hasC&&!hasP&&(b.cash_currency||"USD")==="USD"&&mi){ usdC+=Number(b.cash_amount)*sh; usdMi+=mi; }
   });
   var who=trWho==="all"?"":" (bookings with "+esc(trWho)+")";
-  if(!n) return '<div class="tr-h">What we’ve paid'+who+'</div><div class="panel"><div class="muted" style="padding:14px">No costs logged yet — edit a booking to add what it cost in cash and/or miles.</div></div>';
+  if(!n) return '<div class="tr-h">What we’ve paid'+who+'</div><div class="panel"><div class="muted" style="padding:14px">'+(trWho!=="all"&&bks.some(function(b){ return b.cash_amount!=null||b.points_amount; })?'No ticket costs for '+esc(trWho)+' (e.g. flew as a lap infant).':'No costs logged yet — edit a booking to add what it cost in cash and/or miles.')+'</div></div>';
   var curs=Object.keys(cash).sort(function(a,b){ return a==="USD"?-1:b==="USD"?1:a.localeCompare(b); });
   var totalPts=0, progs=Object.keys(pts).sort(function(a,b){ return pts[b]-pts[a]; }); progs.forEach(function(k){ totalPts+=pts[k]; });
   var tiles='<div class="tr-stats">'+
@@ -5098,7 +5107,7 @@ function trCostSection(bks){
     ylist.map(function(y){ var Y=yrs[y];
       return '<tr><td>'+esc(y)+'</td><td class="num">'+Y.n+'</td><td class="num">'+(Object.keys(Y.cash).map(function(c){ return trMoney(Y.cash[c],c); }).join(" + ")||"—")+'</td><td class="num">'+(Y.pts?trN(Y.pts):"—")+'</td></tr>'; }).join("")+'</table></div>';
   var cl=progs.length?'<div class="panel" style="margin-top:10px"><div class="tr-cloud">'+progs.map(function(k){ return '<span>'+esc(k)+' <b>'+trN(pts[k])+'</b></span>'; }).join("")+'</div></div>':'';
-  return '<div class="tr-h">What we’ve paid'+who+'</div><div class="muted" style="margin-bottom:8px">Each booking’s price is counted once. Currencies are kept separate (no conversion).</div>'+tiles+table+cl;
+  return '<div class="tr-h">What we’ve paid'+who+'</div><div class="muted" style="margin-bottom:8px">Each booking’s price is counted once'+(trWho==="all"?'':', and '+esc(trWho)+' gets an even share of it, split among the travelers who paid')+'. Currencies are kept separate (no conversion).</div>'+tiles+table+cl;
 }
 function trWireFlights(){
   var F=trFF;
@@ -5123,7 +5132,9 @@ function trWireFlights(){
     for(var i=out.length-1;i>=0;i--){ var s=out[i]; F.segs.push({id:null,date:"",year:s.date?s.date.slice(0,4):s.year,airline:s.airline,airline_code:s.airline_code,flight_no:"",from:s.to,to:s.from,aircraft:"",cabin:s.cabin,seat:"",note:""}); }
     trRenderFlights(); toast("Return flights added — fill in dates and flight numbers"); });
   document.querySelectorAll("[data-ffp]").forEach(function(b){ b.addEventListener("click",function(){ keep(); var n=this.getAttribute("data-ffp"), i=F.people.indexOf(n);
-    if(i>=0) F.people.splice(i,1); else F.people.push(n); trRenderFlights(); }); });
+    if(i>=0){ F.people.splice(i,1); var j=F.free.indexOf(n); if(j>=0) F.free.splice(j,1); } else F.people.push(n); trRenderFlights(); }); });
+  document.querySelectorAll("[data-fffree]").forEach(function(b){ b.addEventListener("click",function(){ keep(); var n=this.getAttribute("data-fffree"), i=F.free.indexOf(n);
+    if(i>=0) F.free.splice(i,1); else F.free.push(n); trRenderFlights(); }); });
   $("ffAllP").addEventListener("click",function(){ keep(); F.people=TR_PEOPLE.map(function(x){ return x.n; }); trRenderFlights(); });
   $("ffSave").addEventListener("click",function(){ keep(); trSaveBooking(); });
   if($("ffCancel")) $("ffCancel").addEventListener("click",function(){ trFF=trBlankBooking(); trRenderFlights(); });
@@ -5132,7 +5143,7 @@ function trWireFlights(){
 }
 function trEditBooking(id){
   var b=null; trBookings.forEach(function(x){ if(x.id===id) b=x; }); if(!b) return;
-  trFF={id:b.id,conf:b.confirmation||"",ticket:b.ticket_no||"",through:b.booked_through||"",bdate:b.booking_date||"",people:(b.people||[]).slice(),
+  trFF={id:b.id,conf:b.confirmation||"",ticket:b.ticket_no||"",through:b.booked_through||"",bdate:b.booking_date||"",people:(b.people||[]).slice(),free:(b.free_people||[]).slice(),hadFree:!!(b.free_people||[]).length,
     cash:b.cash_amount!=null?String(b.cash_amount):"",cur:b.cash_currency||"USD",pts:b.points_amount!=null?String(b.points_amount):"",prog:b.points_program||"",note:b.note||"",removed:[],
     segs:(trBkSegs[b.id]||[]).map(function(s){ return {id:s.id,date:s.flight_date||"",year:s.flight_year?String(s.flight_year):"",airline:s.airline||"",airline_code:s.airline_code||"",
       flight_no:s.flight_no||"",from:s.from_code||"",to:s.to_code||"",aircraft:s.aircraft||"",cabin:s.cabin||"",seat:s.seat||"",note:s.note||""}; })};
@@ -5151,6 +5162,8 @@ async function trSaveBooking(){
   if(pts&&!prog){ toast("Which program were the miles / points from?"); return; }
   var bk={confirmation:(F.conf||"").trim().toUpperCase()||null,ticket_no:(F.ticket||"").replace(/\s/g,"")||null,booked_through:(F.through||"").trim()||null,booking_date:F.bdate||null,
     people:F.people,cash_amount:cash,cash_currency:cash!==null?(F.cur||"USD"):null,points_amount:pts!==null?Math.round(pts):null,points_program:pts!==null?prog||null:null,note:(F.note||"").trim()||null};
+  var free=F.free.filter(function(n){ return F.people.indexOf(n)>=0; });
+  if(free.length||F.hadFree) bk.free_people=free;   // only sent when used, so saving works before the new column exists
   btn.disabled=true; btn.textContent="Saving…";
   try{
     var bid=F.id;
