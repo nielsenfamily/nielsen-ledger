@@ -150,6 +150,8 @@
   .tr-tg.on.f-been{background:var(--teal);border-color:var(--teal);color:#fff}
   .tr-tg.on.f-want{background:var(--gold);border-color:var(--gold);color:#fff}
   .tr-tg.on.f-fave{background:var(--rust);border-color:var(--rust);color:#fff}
+  .tr-tg.auto{background:#fff;border:2px dashed var(--teal);color:var(--teal);font-weight:800}
+  .tr-via{font-size:10.5px;color:var(--teal);font-weight:700;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .tr-yr{width:62px;height:34px;padding:4px 6px;border:1px solid var(--line);border-radius:8px;font-size:14px;text-align:center;font-family:inherit;background:var(--card)}
   .tr-colh{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);font-weight:700;text-align:center}
   .tr-list{max-height:430px;overflow:auto;margin-top:8px;border-top:1px solid var(--line)}
@@ -4725,10 +4727,21 @@ function trOpenRef(ref){
   var o=TX.byRef[ref]; if(o) trStartEdit(trItemToPlace(o),false);
 }
 function trOpenPlace(p){ trStartEdit(p,false); }
+// Who has been to a country or U.S. state through places inside it (Frankfurt -> Germany, Dallas -> Texas)
+function trVia(kind,code){
+  var out={}; if(!code||(kind!=="country"&&kind!=="state")) return out;
+  trPlaces.forEach(function(q){
+    if(q.kind===kind) return;
+    var inside=kind==="country" ? ((q.kind==="state"?"US":q.country_code)===code) : (q.kind!=="country"&&(q.country_code==="US"||q.kind==="state")&&q.region===code);
+    if(!inside) return; var mk=trMk[q.id]||{};
+    TR_PEOPLE.forEach(function(x){ if(mk[x.n]&&mk[x.n].been) (out[x.n]=out[x.n]||[]).push(trLabel(q)); });
+  });
+  return out;
+}
 function trStartEdit(p,custom){
   var marks={}, mk=p.id?(trMk[p.id]||{}):{};
   TR_PEOPLE.forEach(function(x){ var m=mk[x.n]||{}; marks[x.n]={been:!!m.been,want:!!m.want,fave:!!m.fave,first_year:m.first_year||""}; });
-  trEdit={place:JSON.parse(JSON.stringify(p)),marks:marks,custom:!!custom};
+  trEdit={place:JSON.parse(JSON.stringify(p)),marks:marks,custom:!!custom,via:trVia(p.kind,p.kind==="state"?p.region:p.country_code)};
   if(trTmp){ trMap.removeLayer(trTmp); trTmp=null; }
   if(p.lat!=null && trMap){
     trTmp=L.circleMarker([p.lat,p.lng],{radius:13,color:"#0E7C7B",weight:2.5,fill:false,interactive:false}).addTo(trMap);
@@ -4746,12 +4759,15 @@ function trRenderEditor(){
     ? '<div class="label" style="margin-top:2px">Name this pin</div><input id="trEdName" class="field" style="margin-bottom:8px" placeholder="e.g. Lauterbrunnen, Grandma’s farm" value="'+esc(p.name)+'">'+
       '<div class="row" style="gap:6px;margin-bottom:6px"><button class="chip'+(p.kind==="site"?" on":"")+'" data-trk="site">Special site</button><button class="chip'+(p.kind==="city"?" on":"")+'" data-trk="city">Town / city</button></div>'+
       '<div class="muted">'+esc([p.region?TX.st[p.region]:"",trCountryName(p.country_code)].filter(Boolean).join(", ")||"Location: open water?")+'</div>'
-    : '<div class="tr-ed-name">'+esc(trLabel(p))+'</div><div class="muted">'+esc(TR_KIND[p.kind])+(trDetail(p)&&p.kind!=="city"?" · "+esc(trDetail(p)):"")+(p.id?"":" · not on your map yet")+'</div>';
+    : '<div class="tr-ed-name">'+esc(trLabel(p))+'</div><div class="muted">'+esc(TR_KIND[p.kind])+(trDetail(p)&&p.kind!=="city"?" · "+esc(trDetail(p)):"")+(p.id?"":(Object.keys(e.via).length?" · counted from places you’ve visited there":" · not on your map yet"))+'</div>';
   var rows='<div class="tr-wrow" style="padding-top:10px"><span></span><span class="tr-colh">Been</span><span class="tr-colh">Want</span><span class="tr-colh">Fave</span><span class="tr-colh">Year</span></div>'+
     TR_PEOPLE.map(function(x){ var m=e.marks[x.n];
       return '<div class="tr-wrow"><span class="tr-pn"><i style="background:'+x.c+'"></i>'+esc(x.n)+'</span>'+
-        ['been','want','fave'].map(function(f){ return '<button class="tr-tg f-'+f+(m[f]?' on':'')+'" data-p="'+x.n+'" data-f="'+f+'" title="'+f+'">'+({been:"✓",want:"★",fave:"♥"})[f]+'</button>'; }).join("")+
-        (m.been?'<input class="tr-yr" data-p="'+x.n+'" inputmode="numeric" maxlength="4" placeholder="year" value="'+esc(m.first_year)+'">':'<span></span>')+'</div>'; }).join("");
+        ['been','want','fave'].map(function(f){ var auto=f==="been"&&!m.been&&e.via[x.n];
+          return '<button class="tr-tg f-'+f+(m[f]?' on':'')+(auto?' auto':'')+'" data-p="'+x.n+'" data-f="'+f+'" title="'+(auto?"Counted automatically from "+esc(e.via[x.n].join(", ")):f)+'">'+({been:"✓",want:"★",fave:"♥"})[f]+'</button>'; }).join("")+
+        (m.been?'<input class="tr-yr" data-p="'+x.n+'" inputmode="numeric" maxlength="4" placeholder="year" value="'+esc(m.first_year)+'">'
+          :e.via[x.n]?'<span class="tr-via" title="'+esc(e.via[x.n].join(", "))+'">via '+esc(e.via[x.n][0].split(",")[0])+(e.via[x.n].length>1?' +'+(e.via[x.n].length-1):'')+'</span>':'<span></span>')+'</div>'; }).join("")+
+    (Object.keys(e.via).length?'<div class="muted" style="margin-top:6px">A dashed ✓ means it already counts, from places inside it. Tap it only to add a year or note.</div>':'');
   host.innerHTML='<div class="tr-ed"><div class="row between" style="align-items:flex-start;gap:8px"><div style="flex:1;min-width:0">'+head+'</div>'+
     '<button class="btn" id="trEdX" style="padding:5px 9px">✕</button></div>'+rows+
     '<div class="row wrapf" style="gap:6px;margin:8px 0 10px"><button class="btn" id="trEdAll" style="font-size:12px;padding:6px 10px">Everyone’s been</button>'+
@@ -4820,19 +4836,31 @@ function trRenderList(){
   var rows=trPlaces.map(function(p){ var mk=trMk[p.id]||{}, been=[], want=[], fave=[];
       scope.forEach(function(n){ var m=mk[n]; if(!m) return; if(m.been) been.push(n); if(m.want) want.push(n); if(m.fave) fave.push(n); });
       return {p:p,been:been,want:want,fave:fave}; })
-    .filter(function(r){ return (trKind==="all"||r.p.kind===trKind) && ((trShow.been&&r.been.length)||(trShow.want&&r.want.length)||(trShow.fave&&r.fave.length)); })
-    .sort(function(a,b){ return trLabel(a.p).localeCompare(trLabel(b.p)); });
+    .filter(function(r){ return (trKind==="all"||r.p.kind===trKind) && ((trShow.been&&r.been.length)||(trShow.want&&r.want.length)||(trShow.fave&&r.fave.length)); });
+  if((trKind==="country"||trKind==="state") && trShow.been && trD){ // also list ones visited only through places inside them
+    var have={}; rows.forEach(function(r){ have[r.p.kind==="state"?r.p.region:r.p.country_code]=r; });
+    var src=trKind==="country"?trD.co:trD.st;
+    Object.keys(src).forEach(function(code){
+      if(trKind==="state"&&!TX.st[code]) return; if(trKind==="country"&&!TX.cc[code]) return;
+      var who=Object.keys(src[code]);
+      if(have[code]){ var r=have[code]; who.forEach(function(n){ if(r.been.indexOf(n)<0) r.been.push(n); }); return; }
+      rows.push({p:{id:null,kind:trKind,ref:(trKind==="country"?"co:":"st:")+code,name:trKind==="country"?TX.cc[code].name:TX.st[code],region:trKind==="state"?code:null,country_code:trKind==="country"?code:"US"},
+        been:who,want:[],fave:[],via:true});
+    });
+  }
+  rows.sort(function(a,b){ return trLabel(a.p).localeCompare(trLabel(b.p)); });
   var kinds=["all","city","state","country","park","site"], kl={all:"All",city:"Cities",state:"States",country:"Countries",park:"Parks",site:"Sites"};
   host.innerHTML='<div class="row wrapf" style="gap:5px;margin-top:14px">'+kinds.map(function(k){ return '<button class="chip'+(trKind===k?" on":"")+'" data-trkind="'+k+'" style="padding:4px 10px;font-size:11.5px">'+kl[k]+'</button>'; }).join("")+'</div>'+
     '<div class="muted" style="margin-top:8px">'+rows.length+' place'+(rows.length===1?"":"s")+(trWho==="all"?"":" for "+esc(trWho))+'</div>'+
     '<div class="tr-list">'+(rows.length?rows.map(function(r){
       var dots=r.been.map(function(n){ return '<i style="background:'+trColor(n)+'" title="'+esc(n)+' has been"></i>'; }).join("")+
         r.want.filter(function(n){ return r.been.indexOf(n)<0; }).map(function(n){ return '<i class="w" style="border-color:'+trColor(n)+'" title="'+esc(n)+' wants to go"></i>'; }).join("");
-      return '<button class="tr-li" data-pid="'+r.p.id+'"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(r.fave.length?'<span style="color:var(--rust)">♥</span> ':'')+esc(trLabel(r.p))+
-        ' <span class="muted">'+esc(TR_KIND[r.p.kind])+'</span></span><span class="tr-dots">'+dots+'</span></button>'; }).join("")
+      return '<button class="tr-li" '+(r.via?'data-ref="'+r.p.ref+'"':'data-pid="'+r.p.id+'"')+'><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(r.fave.length?'<span style="color:var(--rust)">♥</span> ':'')+esc(trLabel(r.p))+
+        ' <span class="muted">'+esc(TR_KIND[r.p.kind])+(r.via?' · via places':'')+'</span></span><span class="tr-dots">'+dots+'</span></button>'; }).join("")
       :'<div class="muted" style="padding:14px 4px">Nothing here yet. Search above, tap a country or state on the map, or drop a pin.</div>')+'</div>';
   host.querySelectorAll("[data-trkind]").forEach(function(b){ b.addEventListener("click",function(){ trKind=this.getAttribute("data-trkind"); trRenderList(); }); });
   host.querySelectorAll(".tr-li").forEach(function(b){ b.addEventListener("click",function(){ var id=this.getAttribute("data-pid");
+    if(this.getAttribute("data-ref")){ trOpenRef(this.getAttribute("data-ref")); return; }
     for(var i=0;i<trPlaces.length;i++) if(trPlaces[i].id===id){ var p=trPlaces[i]; trOpenPlace(p); if(p.lat!=null) trMap.setView([p.lat,p.lng],Math.max(trMap.getZoom(),5)); } }); });
 }
 
