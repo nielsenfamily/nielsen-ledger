@@ -199,6 +199,22 @@
   .tr-bk-r{display:flex;align-items:center;gap:10px;flex-shrink:0}
   .tr-fl2{display:grid;grid-template-columns:96px minmax(0,1.2fr) 120px minmax(0,1.3fr) 60px;gap:8px;align-items:center;padding:8px 14px;border-top:1px solid var(--paper);font-size:13px}
   @media (max-width:700px){ .tr-fl2{grid-template-columns:78px 1fr 52px;row-gap:2px} .tr-fl2 .c-x{grid-column:2/4} .tr-bk-h{flex-direction:column} }
+  .tr-bars{display:flex;align-items:flex-end;gap:4px;height:190px;padding:26px 14px 34px;overflow-x:auto}
+  .tr-bar{flex:1 0 22px;min-width:22px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;position:relative;cursor:default}
+  .tr-bar i{display:block;width:70%;max-width:34px;background:var(--teal);border-radius:4px 4px 0 0;min-height:0}
+  .tr-bar:hover i{background:#0a6463}
+  .tr-bar .v{font-size:10px;color:var(--ink-soft);font-weight:700;margin-bottom:3px;white-space:nowrap}
+  .tr-bar .x{position:absolute;bottom:-20px;font-size:10px;color:var(--ink-soft);white-space:nowrap}
+  .tr-rgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+  .tr-rgrid3{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:14px}
+  @media (max-width:760px){ .tr-rgrid{grid-template-columns:1fr} }
+  .tr-top5r{display:grid;grid-template-columns:minmax(0,1.4fr) 1fr 34px;gap:8px;align-items:center;padding:5px 14px;font-size:12.5px}
+  .tr-top5r .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tr-top5r .bar, .tr-hbar{display:block;height:7px;background:var(--paper);border-radius:4px;overflow:hidden}
+  .tr-top5r .bar i, .tr-hbar i{display:block;height:100%;background:var(--teal);border-radius:4px}
+  .tr-top5r .num{text-align:right;font-weight:700}
+  .tr-top5{padding-bottom:8px}
+  .tr-cyr{display:grid;grid-template-columns:70px 1fr;gap:10px;padding:8px 14px;border-top:1px solid var(--paper);font-size:13px}
   .tr-cloud{display:flex;flex-wrap:wrap;gap:6px;padding:12px 14px}
   .tr-cloud span{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:4px 10px;font-size:12.5px;font-weight:650}
   .tr-cloud span b{color:var(--teal)}
@@ -4524,6 +4540,7 @@ async function loadTravel(){
   var bkById={}; trBookings.forEach(function(x){ bkById[x.id]=x; });
   trBkSegs={}; trSegs.forEach(function(sg){ var bk=bkById[sg.booking_id]; sg.people=bk?(bk.people||[]):[]; (trBkSegs[sg.booking_id]=trBkSegs[sg.booking_id]||[]).push(sg); });
   trMk={}; trMarks.forEach(function(m){ (trMk[m.place_id]=trMk[m.place_id]||{})[m.person]=m; });
+  trBuildEff();
 }
 
 /* ---- reference-data index ---- */
@@ -4562,7 +4579,7 @@ function trItemToPlace(o){ return {id:null,kind:o.kind,ref:o.ref,name:o.name,reg
 function trSearch(q){
   var qn=trNorm(q); if(qn.length<2) return [];
   var qc=qn.replace(/ /g,""), res=[], seenRef={};
-  trPlaces.forEach(function(p){ if(trNorm(trLabel(p)).indexOf(qn)>=0){ res.push({saved:p,score:-1,label:trLabel(p),sub:"on your map"}); if(p.ref) seenRef[p.ref]=1; } });
+  trAllPlaces.forEach(function(p){ if(trNorm(trLabel(p)).indexOf(qn)>=0){ res.push({saved:p,score:-1,label:trLabel(p),sub:"on your map"}); if(p.ref) seenRef[p.ref]=1; } });
   var cand=[];
   for(var i=0;i<TX.items.length;i++){
     var o=TX.items[i]; if(seenRef[o.ref]) continue;
@@ -4602,8 +4619,8 @@ function trSuggest(input, box, fn, pick){
 function trDerive(){
   var scope=trScope(), D={co:{},st:{},coWant:{},stWant:{},pins:[]};
   function addSet(map,key,person){ if(!key) return; (map[key]=map[key]||{})[person]=1; }
-  trPlaces.forEach(function(p){
-    var mk=trMk[p.id]||{}, been=[], want=[], fave=[];
+  trAllPlaces.forEach(function(p){
+    var mk=trEff[p.id]||{}, been=[], want=[], fave=[];
     scope.forEach(function(n){ var m=mk[n]; if(!m) return; if(m.been) been.push(n); if(m.want) want.push(n); if(m.fave) fave.push(n); });
     var cc=p.kind==="state"?"US":p.country_code, stc=(p.country_code==="US"||p.kind==="state")?p.region:null;
     been.forEach(function(n){ addSet(D.co,cc,n); if(stc) addSet(D.st,stc,n); });
@@ -4723,25 +4740,26 @@ function trDropAt(ll){
 
 /* ---- editor ---- */
 function trOpenRef(ref){
-  for(var i=0;i<trPlaces.length;i++) if(trPlaces[i].ref===ref) return trOpenPlace(trPlaces[i]);
+  for(var i=0;i<trAllPlaces.length;i++) if(trAllPlaces[i].ref===ref) return trOpenPlace(trAllPlaces[i]);
   var o=TX.byRef[ref]; if(o) trStartEdit(trItemToPlace(o),false);
 }
 function trOpenPlace(p){ trStartEdit(p,false); }
 // Who has been to a country or U.S. state through places inside it (Frankfurt -> Germany, Dallas -> Texas)
 function trVia(kind,code){
   var out={}; if(!code||(kind!=="country"&&kind!=="state")) return out;
-  trPlaces.forEach(function(q){
+  trAllPlaces.forEach(function(q){
     if(q.kind===kind) return;
     var inside=kind==="country" ? ((q.kind==="state"?"US":q.country_code)===code) : (q.kind!=="country"&&(q.country_code==="US"||q.kind==="state")&&q.region===code);
-    if(!inside) return; var mk=trMk[q.id]||{};
+    if(!inside) return; var mk=trEff[q.id]||{};
     TR_PEOPLE.forEach(function(x){ if(mk[x.n]&&mk[x.n].been) (out[x.n]=out[x.n]||[]).push(trLabel(q)); });
   });
   return out;
 }
 function trStartEdit(p,custom){
+  if(p.virtual){ p=JSON.parse(JSON.stringify(p)); p.id=null; delete p.virtual; }   // a city known only from flights: saving creates it
   var marks={}, mk=p.id?(trMk[p.id]||{}):{};
   TR_PEOPLE.forEach(function(x){ var m=mk[x.n]||{}; marks[x.n]={been:!!m.been,want:!!m.want,fave:!!m.fave,first_year:m.first_year||""}; });
-  trEdit={place:JSON.parse(JSON.stringify(p)),marks:marks,custom:!!custom,via:trVia(p.kind,p.kind==="state"?p.region:p.country_code)};
+  trEdit={place:JSON.parse(JSON.stringify(p)),marks:marks,custom:!!custom,via:trVia(p.kind,p.kind==="state"?p.region:p.country_code),fly:(p.ref&&trFly[p.ref])?trFly[p.ref].by:{}};
   if(trTmp){ trMap.removeLayer(trTmp); trTmp=null; }
   if(p.lat!=null && trMap){
     trTmp=L.circleMarker([p.lat,p.lng],{radius:13,color:"#0E7C7B",weight:2.5,fill:false,interactive:false}).addTo(trMap);
@@ -4759,15 +4777,15 @@ function trRenderEditor(){
     ? '<div class="label" style="margin-top:2px">Name this pin</div><input id="trEdName" class="field" style="margin-bottom:8px" placeholder="e.g. Lauterbrunnen, Grandma’s farm" value="'+esc(p.name)+'">'+
       '<div class="row" style="gap:6px;margin-bottom:6px"><button class="chip'+(p.kind==="site"?" on":"")+'" data-trk="site">Special site</button><button class="chip'+(p.kind==="city"?" on":"")+'" data-trk="city">Town / city</button></div>'+
       '<div class="muted">'+esc([p.region?TX.st[p.region]:"",trCountryName(p.country_code)].filter(Boolean).join(", ")||"Location: open water?")+'</div>'
-    : '<div class="tr-ed-name">'+esc(trLabel(p))+'</div><div class="muted">'+esc(TR_KIND[p.kind])+(trDetail(p)&&p.kind!=="city"?" · "+esc(trDetail(p)):"")+(p.id?"":(Object.keys(e.via).length?" · counted from places you’ve visited there":" · not on your map yet"))+'</div>';
+    : '<div class="tr-ed-name">'+esc(trLabel(p))+'</div><div class="muted">'+esc(TR_KIND[p.kind])+(trDetail(p)&&p.kind!=="city"?" · "+esc(trDetail(p)):"")+(p.id?"":(Object.keys(e.fly).length?" · counted from your flights":Object.keys(e.via).length?" · counted from places you’ve visited there":" · not on your map yet"))+'</div>';
   var rows='<div class="tr-wrow" style="padding-top:10px"><span></span><span class="tr-colh">Been</span><span class="tr-colh">Want</span><span class="tr-colh">Fave</span><span class="tr-colh">Year</span></div>'+
-    TR_PEOPLE.map(function(x){ var m=e.marks[x.n];
+    TR_PEOPLE.map(function(x){ var m=e.marks[x.n], auto=(e.fly[x.n]||[]).map(function(l){ return "flight "+l; }).concat(e.via[x.n]||[]);
       return '<div class="tr-wrow"><span class="tr-pn"><i style="background:'+x.c+'"></i>'+esc(x.n)+'</span>'+
-        ['been','want','fave'].map(function(f){ var auto=f==="been"&&!m.been&&e.via[x.n];
-          return '<button class="tr-tg f-'+f+(m[f]?' on':'')+(auto?' auto':'')+'" data-p="'+x.n+'" data-f="'+f+'" title="'+(auto?"Counted automatically from "+esc(e.via[x.n].join(", ")):f)+'">'+({been:"✓",want:"★",fave:"♥"})[f]+'</button>'; }).join("")+
+        ['been','want','fave'].map(function(f){ var au=f==="been"&&!m.been&&auto.length;
+          return '<button class="tr-tg f-'+f+(m[f]?' on':'')+(au?' auto':'')+'" data-p="'+x.n+'" data-f="'+f+'" title="'+(au?"Counted automatically from "+esc(auto.join(", ")):f)+'">'+({been:"✓",want:"★",fave:"♥"})[f]+'</button>'; }).join("")+
         (m.been?'<input class="tr-yr" data-p="'+x.n+'" inputmode="numeric" maxlength="4" placeholder="year" value="'+esc(m.first_year)+'">'
-          :e.via[x.n]?'<span class="tr-via" title="'+esc(e.via[x.n].join(", "))+'">via '+esc(e.via[x.n][0].split(",")[0])+(e.via[x.n].length>1?' +'+(e.via[x.n].length-1):'')+'</span>':'<span></span>')+'</div>'; }).join("")+
-    (Object.keys(e.via).length?'<div class="muted" style="margin-top:6px">A dashed ✓ means it already counts, from places inside it. Tap it only to add a year or note.</div>':'');
+          :auto.length?'<span class="tr-via" title="'+esc(auto.join(", "))+'">'+(e.fly[x.n]?'✈ '+esc(e.fly[x.n][0].split(" ").pop()):'via '+esc(auto[0].split(",")[0]))+(auto.length>1?' +'+(auto.length-1):'')+'</span>':'<span></span>')+'</div>'; }).join("")+
+    (Object.keys(e.via).length||Object.keys(e.fly).length?'<div class="muted" style="margin-top:6px">A dashed ✓ means it already counts'+(Object.keys(e.fly).length?' from your flights':' from places inside it')+'. Tap it only to add a year or note.</div>':'');
   host.innerHTML='<div class="tr-ed"><div class="row between" style="align-items:flex-start;gap:8px"><div style="flex:1;min-width:0">'+head+'</div>'+
     '<button class="btn" id="trEdX" style="padding:5px 9px">✕</button></div>'+rows+
     '<div class="row wrapf" style="gap:6px;margin:8px 0 10px"><button class="btn" id="trEdAll" style="font-size:12px;padding:6px 10px">Everyone’s been</button>'+
@@ -4793,7 +4811,7 @@ async function trSavePlace(){
   var e=trEdit, p=e.place, btn=$("trEdSave");
   p.name=(p.name||"").trim(); if(!p.name){ toast("Give the pin a name"); return; }
   var any=TR_PEOPLE.some(function(x){ var m=e.marks[x.n]; return m.been||m.want||m.fave; });
-  if(!p.id && !any){ toast("Tap ✓, ★ or ♥ for at least one person"); return; }
+  if(!p.id && !any && !Object.keys(e.fly||{}).length){ toast("Tap ✓, ★ or ♥ for at least one person"); return; }
   for(var k in e.marks){ var y=e.marks[k].first_year; if(y && !(+y>=1900 && +y<=2100)){ toast("Year should look like 2019"); return; } }
   btn.disabled=true; btn.textContent="Saving…";
   try{
@@ -4833,9 +4851,10 @@ async function trDeletePlace(){
 function trRenderList(){
   var host=$("trList"); if(!host) return;
   var scope=trScope();
-  var rows=trPlaces.map(function(p){ var mk=trMk[p.id]||{}, been=[], want=[], fave=[];
+  var rows=trAllPlaces.map(function(p){ var mk=trEff[p.id]||{}, been=[], want=[], fave=[];
       scope.forEach(function(n){ var m=mk[n]; if(!m) return; if(m.been) been.push(n); if(m.want) want.push(n); if(m.fave) fave.push(n); });
-      return {p:p,been:been,want:want,fave:fave}; })
+      var fl=scope.some(function(n){ return mk[n]&&mk[n].fly&&!(trMk[p.id]&&trMk[p.id][n]&&trMk[p.id][n].been); });
+      return {p:p,been:been,want:want,fave:fave,fly:fl}; })
     .filter(function(r){ return (trKind==="all"||r.p.kind===trKind) && ((trShow.been&&r.been.length)||(trShow.want&&r.want.length)||(trShow.fave&&r.fave.length)); });
   if((trKind==="country"||trKind==="state") && trShow.been && trD){ // also list ones visited only through places inside them
     var have={}; rows.forEach(function(r){ have[r.p.kind==="state"?r.p.region:r.p.country_code]=r; });
@@ -4856,20 +4875,20 @@ function trRenderList(){
       var dots=r.been.map(function(n){ return '<i style="background:'+trColor(n)+'" title="'+esc(n)+' has been"></i>'; }).join("")+
         r.want.filter(function(n){ return r.been.indexOf(n)<0; }).map(function(n){ return '<i class="w" style="border-color:'+trColor(n)+'" title="'+esc(n)+' wants to go"></i>'; }).join("");
       return '<button class="tr-li" '+(r.via?'data-ref="'+r.p.ref+'"':'data-pid="'+r.p.id+'"')+'><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(r.fave.length?'<span style="color:var(--rust)">♥</span> ':'')+esc(trLabel(r.p))+
-        ' <span class="muted">'+esc(TR_KIND[r.p.kind])+(r.via?' · via places':'')+'</span></span><span class="tr-dots">'+dots+'</span></button>'; }).join("")
+        ' <span class="muted">'+esc(TR_KIND[r.p.kind])+(r.via?' · via places':'')+(r.fly?' · from flights':'')+'</span></span><span class="tr-dots">'+dots+'</span></button>'; }).join("")
       :'<div class="muted" style="padding:14px 4px">Nothing here yet. Search above, tap a country or state on the map, or drop a pin.</div>')+'</div>';
   host.querySelectorAll("[data-trkind]").forEach(function(b){ b.addEventListener("click",function(){ trKind=this.getAttribute("data-trkind"); trRenderList(); }); });
   host.querySelectorAll(".tr-li").forEach(function(b){ b.addEventListener("click",function(){ var id=this.getAttribute("data-pid");
     if(this.getAttribute("data-ref")){ trOpenRef(this.getAttribute("data-ref")); return; }
-    for(var i=0;i<trPlaces.length;i++) if(trPlaces[i].id===id){ var p=trPlaces[i]; trOpenPlace(p); if(p.lat!=null) trMap.setView([p.lat,p.lng],Math.max(trMap.getZoom(),5)); } }); });
+    for(var i=0;i<trAllPlaces.length;i++) if(trAllPlaces[i].id===id){ var p=trAllPlaces[i]; trOpenPlace(p); if(p.lat!=null) trMap.setView([p.lat,p.lng],Math.max(trMap.getZoom(),5)); } }); });
 }
 
 /* ---- stats ---- */
 function trStatsFor(persons){
   var S={co:{},cont:{},st:{},parks:0,cities:0,sites:0,places:0,area:0,far:null,north:null,south:null,newYr:0,want:0,fave:0,only:0,together:0};
   var yr=+localDate().slice(0,4);
-  trPlaces.forEach(function(p){
-    var mk=trMk[p.id]||{}, been=persons.filter(function(n){ return mk[n]&&mk[n].been; });
+  trAllPlaces.forEach(function(p){
+    var mk=trEff[p.id]||{}, been=persons.filter(function(n){ return mk[n]&&mk[n].been; });
     if(persons.some(function(n){ return mk[n]&&mk[n].want&&!mk[n].been; })) S.want++;
     if(persons.some(function(n){ return mk[n]&&mk[n].fave; })) S.fave++;
     if(!been.length) return;
@@ -4977,7 +4996,7 @@ var TR_CABINS=[["","—"],["economy","Economy"],["premium","Premium economy"],["
 var TR_THROUGH=["Airline website / app","Chase Travel","Capital One Travel","Amex Travel","Citi Travel","Expedia","Priceline","Booking.com","Kayak","Travel agent","Military travel (DTS / SATO)","Partner award booking"];
 function trBlankSeg(prev){ return {id:null,date:prev?prev.date:"",year:prev?prev.year:"",airline:prev?prev.airline:"",airline_code:prev?prev.airline_code:"",flight_no:"",
   from:prev?prev.to:"",to:"",aircraft:"",cabin:prev?prev.cabin:"",seat:"",note:""}; }
-function trBlankBooking(){ return {id:null,conf:"",ticket:"",through:"",bdate:"",people:trWho==="all"?[]:[trWho],free:[],cash:"",cur:"USD",pts:"",prog:"",note:"",segs:[trBlankSeg()],removed:[]}; }
+function trBlankBooking(){ return {id:null,conf:"",ticket:"",through:"",bdate:"",people:trWho==="all"?[]:[trWho],free:[],purpose:"",cash:"",cur:"USD",pts:"",prog:"",note:"",segs:[trBlankSeg()],removed:[]}; }
 // Share of a booking's price that belongs to one person: split among the travelers who paid (lap infants etc. = 0).
 function trPayers(b){ var free=b.free_people||[]; return (b.people||[]).filter(function(n){ return free.indexOf(n)<0; }); }
 function trShare(b,persons){ if(!persons||persons.length===TR_PEOPLE.length) return 1; var pay=trPayers(b);
@@ -5027,6 +5046,8 @@ function trRenderFlights(){
       '<button class="btn" id="ffAllP" style="font-size:12px;padding:6px 10px">Whole family</button></div>'+
     (F.people.length>1?'<div class="label">No ticket cost <span class="muted" style="font-weight:600">— lap infant, companion pass, etc. The price is split among everyone else.</span></div><div class="row wrapf" style="gap:6px;margin-bottom:12px">'+
       F.people.map(function(n){ var on=F.free.indexOf(n)>=0; return '<button class="chip'+(on?" on":"")+'" data-fffree="'+n+'"'+(on?' style="background:var(--slate);border-color:var(--slate)"':'')+'>'+(on?"✓ ":"")+esc(n)+'</button>'; }).join("")+'</div>':'')+
+    '<div class="label">Purpose of the trip</div><div class="row wrapf" style="gap:6px;margin-bottom:12px">'+TR_PURPOSES.map(function(pp){ var on=F.purpose===pp[0];
+      return '<button class="chip'+(on?" on":"")+'" data-ffpur="'+pp[0]+'">'+pp[1]+'</button>'; }).join("")+'</div>'+
     '<div class="tr-ff">'+
       '<div><div class="label">Confirmation #</div><input id="bkConf" class="field" placeholder="ABC123" value="'+esc(F.conf)+'"></div>'+
       '<div><div class="label">Ticket #</div><input id="bkTicket" class="field" inputmode="numeric" placeholder="0062345678901" value="'+esc(F.ticket)+'"></div>'+
@@ -5069,7 +5090,7 @@ function trRenderFlights(){
       if(cost&&sh!==1) cost=(sh===0?"no cost for "+trWho:trWho+"’s share: "+trCostText({cash_amount:b.cash_amount!=null?Math.round(b.cash_amount*sh*100)/100:null,cash_currency:b.cash_currency,points_amount:b.points_amount?Math.round(b.points_amount*sh):null,points_program:b.points_program}))+" (of "+cost+")";
       var freeTxt=(b.free_people||[]).filter(function(n){ return (b.people||[]).indexOf(n)>=0; });
       var meta=[b.confirmation?"Conf. "+esc(b.confirmation):"",b.booked_through?esc(b.booked_through):"",b.booking_date?"booked "+esc(trFlightWhen({flight_date:b.booking_date})):""].filter(Boolean).join(" · ");
-      return '<div class="panel tr-bk"><div class="tr-bk-h"><div style="min-width:0"><div class="tr-bk-t">'+esc(f0?trFlightWhen(f0):"—")+' · '+esc(trRoute(b))+'</div>'+
+      return '<div class="panel tr-bk"><div class="tr-bk-h"><div style="min-width:0"><div class="tr-bk-t">'+esc(f0?trFlightWhen(f0):"—")+' · '+esc(trRoute(b))+(b.purpose?' <span class="tag" style="background:var(--teal-soft);color:var(--teal);vertical-align:2px">'+esc(trPurposeLabel(b.purpose))+'</span>':'')+'</div>'+
         '<div class="muted">'+[ss.length+" flight"+(ss.length===1?"":"s"),mi?trN(mi)+" mi":"",meta,freeTxt.length?esc(freeTxt.join(", "))+": no ticket cost":""].filter(Boolean).join(" · ")+(b.note?'<br>'+esc(b.note):'')+'</div></div>'+
         '<div class="tr-bk-r"><span class="num" style="font-weight:800">'+esc(cost)+'</span><span class="tr-dots">'+(b.people||[]).map(function(n){ return '<i style="background:'+trColor(n)+'" title="'+esc(n)+'"></i>'; }).join("")+'</span>'+
         '<button class="btn" data-bke="'+b.id+'" style="padding:4px 9px;font-size:11.5px">edit</button></div></div>'+
@@ -5133,6 +5154,7 @@ function trWireFlights(){
     trRenderFlights(); toast("Return flights added — fill in dates and flight numbers"); });
   document.querySelectorAll("[data-ffp]").forEach(function(b){ b.addEventListener("click",function(){ keep(); var n=this.getAttribute("data-ffp"), i=F.people.indexOf(n);
     if(i>=0){ F.people.splice(i,1); var j=F.free.indexOf(n); if(j>=0) F.free.splice(j,1); } else F.people.push(n); trRenderFlights(); }); });
+  document.querySelectorAll("[data-ffpur]").forEach(function(b){ b.addEventListener("click",function(){ keep(); var v=this.getAttribute("data-ffpur"); F.purpose=F.purpose===v?"":v; trRenderFlights(); }); });
   document.querySelectorAll("[data-fffree]").forEach(function(b){ b.addEventListener("click",function(){ keep(); var n=this.getAttribute("data-fffree"), i=F.free.indexOf(n);
     if(i>=0) F.free.splice(i,1); else F.free.push(n); trRenderFlights(); }); });
   $("ffAllP").addEventListener("click",function(){ keep(); F.people=TR_PEOPLE.map(function(x){ return x.n; }); trRenderFlights(); });
@@ -5143,7 +5165,7 @@ function trWireFlights(){
 }
 function trEditBooking(id){
   var b=null; trBookings.forEach(function(x){ if(x.id===id) b=x; }); if(!b) return;
-  trFF={id:b.id,conf:b.confirmation||"",ticket:b.ticket_no||"",through:b.booked_through||"",bdate:b.booking_date||"",people:(b.people||[]).slice(),free:(b.free_people||[]).slice(),hadFree:!!(b.free_people||[]).length,
+  trFF={id:b.id,conf:b.confirmation||"",ticket:b.ticket_no||"",through:b.booked_through||"",bdate:b.booking_date||"",people:(b.people||[]).slice(),free:(b.free_people||[]).slice(),hadFree:!!(b.free_people||[]).length,purpose:b.purpose||"",hadPurpose:!!b.purpose,
     cash:b.cash_amount!=null?String(b.cash_amount):"",cur:b.cash_currency||"USD",pts:b.points_amount!=null?String(b.points_amount):"",prog:b.points_program||"",note:b.note||"",removed:[],
     segs:(trBkSegs[b.id]||[]).map(function(s){ return {id:s.id,date:s.flight_date||"",year:s.flight_year?String(s.flight_year):"",airline:s.airline||"",airline_code:s.airline_code||"",
       flight_no:s.flight_no||"",from:s.from_code||"",to:s.to_code||"",aircraft:s.aircraft||"",cabin:s.cabin||"",seat:s.seat||"",note:s.note||""}; })};
@@ -5163,7 +5185,8 @@ async function trSaveBooking(){
   var bk={confirmation:(F.conf||"").trim().toUpperCase()||null,ticket_no:(F.ticket||"").replace(/\s/g,"")||null,booked_through:(F.through||"").trim()||null,booking_date:F.bdate||null,
     people:F.people,cash_amount:cash,cash_currency:cash!==null?(F.cur||"USD"):null,points_amount:pts!==null?Math.round(pts):null,points_program:pts!==null?prog||null:null,note:(F.note||"").trim()||null};
   var free=F.free.filter(function(n){ return F.people.indexOf(n)>=0; });
-  if(free.length||F.hadFree) bk.free_people=free;   // only sent when used, so saving works before the new column exists
+  if(free.length||F.hadFree) bk.free_people=free;
+  if(F.purpose||F.hadPurpose) bk.purpose=F.purpose||null;   // only sent when used, so saving works before the SQL runs   // only sent when used, so saving works before the new column exists
   btn.disabled=true; btn.textContent="Saving…";
   try{
     var bid=F.id;
@@ -5216,6 +5239,208 @@ function trAirportSearch(q){
   return res.slice(0,12).map(function(r){ var a=r.a; return {label:a[0]+" — "+a[2],sub:a[1]+(a[3]&&a[3]!=="US"?" · "+trCountryName(a[3]):""),code:a[0]}; });
 }
 
+/* ---- flights -> places: final destinations count as visited cities (layovers don't) ---- */
+var TR_PURPOSES=[["ministry","Ministry"],["vacation","Vacation"],["personal","Personal"],["military","Military"],["other","Other"]];
+function trPurposeLabel(v){ for(var i=0;i<TR_PURPOSES.length;i++) if(TR_PURPOSES[i][0]===v) return TR_PURPOSES[i][1]; return v?v:""; }
+function trCityCands(){ if(TX.cityCands) return TX.cityCands; var m={};
+  TX.items.forEach(function(o){ if(o.kind!=="city") return; (m[o.cc+"|"+o.nm]=m[o.cc+"|"+o.nm]||[]).push(o); }); TX.cityCands=m; return m; }
+// Airport code -> the city it serves (DFW -> Dallas, NRT -> Tokyo). Falls back to a pin at the airport.
+function trAirportPlace(code){
+  TX.apPlace=TX.apPlace||{}; if(code in TX.apPlace) return TX.apPlace[code];
+  var a=TX.ap[code], out=null; if(!a){ TX.apPlace[code]=null; return null; }
+  var cands=trCityCands(), names=[a.city||""].concat(String(a.city||"").split(/\s*[-\/,]\s*|\s+and\s+/));
+  // exact name ("Tokyo") or name that starts with it ("Frankfurt" -> "Frankfurt am Main"), within 80 miles; biggest city wins
+  for(var i=0;i<names.length&&!out;i++){ var nm=trNorm(names[i]); if(!nm||nm.length<3) continue;
+    var best=null;
+    TX.items.forEach(function(o){ if(o.kind!=="city"||o.cc!==a.cc) return; if(o.nm!==nm&&o.nm.indexOf(nm+" ")!==0) return;
+      if(trMiles(a.lat,a.lng,o.lat,o.lng)>=80) return; if(!best||o.w>best.w) best=o; });
+    if(best) out=trItemToPlace(best); }
+  if(!out){ var best2=null, bd2=1e9;
+    TX.items.forEach(function(o){ if(o.kind!=="city"||o.cc!==a.cc||o.w<50000||Math.abs(o.lat-a.lat)>0.6||Math.abs(o.lng-a.lng)>0.8) return;
+      var d=trMiles(a.lat,a.lng,o.lat,o.lng); if(d<25&&(!best2||o.w>best2.w)){ best2=o; } });
+    if(best2) out=trItemToPlace(best2); }
+  if(!out){ var loc=trLocate({lat:a.lat,lng:a.lng});
+    out={id:null,kind:"city",ref:"ap:"+code,name:a.city||a.name,region:loc.region,country_code:a.cc||loc.cc,lat:a.lat,lng:a.lng,note:null}; }
+  TX.apPlace[code]=out; return out;
+}
+// A stop is a destination when it's the last flight of the booking, the trip turns around there,
+// the next flight leaves from a different airport, or the next flight is 2+ days later. Same/next-day connections are layovers.
+function trFlightDests(bookings){
+  var out=[];
+  (bookings||trBookings).forEach(function(b){ var ss=trBkSegs[b.id]||[];
+    ss.forEach(function(s,i){ if(!s.to_code) return; var n=ss[i+1], dest=false;
+      if(!n) dest=true;
+      else if(n.from_code&&n.from_code!==s.to_code) dest=true;
+      else if(s.from_code&&n.to_code===s.from_code) dest=true;
+      else if(s.flight_date&&n.flight_date&&(new Date(n.flight_date)-new Date(s.flight_date))/864e5>=2) dest=true;
+      if(dest) out.push({code:s.to_code,year:s.flight_year||(s.flight_date?+s.flight_date.slice(0,4):null),b:b,s:s}); }); });
+  return out;
+}
+var trFly={}, trAllPlaces=[], trEff={};
+function trBuildEff(){
+  trAllPlaces=trPlaces.slice(); trEff={}; trFly={};
+  if(!TX) return;
+  trFlightDests().forEach(function(d){ var p=trAirportPlace(d.code); if(!p) return; var F=trFly[p.ref]=trFly[p.ref]||{p:p,by:{},yr:{}};
+    var lbl=(d.s.from_code||"?")+"→"+d.code+(d.year?" "+d.year:"");
+    (d.b.people||[]).forEach(function(n){ (F.by[n]=F.by[n]||[]).push(lbl); if(d.year&&(!F.yr[n]||d.year<F.yr[n])) F.yr[n]=d.year; }); });
+  var byRef={}; trPlaces.forEach(function(p){ if(p.ref) byRef[p.ref]=p; });
+  trPlaces.forEach(function(p){ var mk=trMk[p.id]||{}, F=p.ref&&trFly[p.ref], e={};
+    TR_PEOPLE.forEach(function(x){ var m=mk[x.n], f=F&&F.by[x.n]; if(!m&&!f) return;
+      e[x.n]={been:!!(m&&m.been)||!!f,want:!!(m&&m.want),fave:!!(m&&m.fave),first_year:(m&&m.first_year)||(f?F.yr[x.n]:null)||null,created_at:m?m.created_at:null,fly:f||null}; });
+    trEff[p.id]=e; });
+  Object.keys(trFly).forEach(function(ref){ if(byRef[ref]) return; var F=trFly[ref], vp=JSON.parse(JSON.stringify(F.p));
+    vp.id="fv:"+ref; vp.virtual=true; trAllPlaces.push(vp);
+    var e={}; Object.keys(F.by).forEach(function(n){ e[n]={been:true,want:false,fave:false,first_year:F.yr[n]||null,created_at:null,fly:F.by[n]}; }); trEff[vp.id]=e; });
+}
+
+/* ---- reports ---- */
+var trRep={from:"",to:"",purposes:[]};
+function trBkYear(b){ var f=trBkFirst(b); return f?(f.flight_year||(f.flight_date?+f.flight_date.slice(0,4):null)):null; }
+function trRepBookings(){
+  return trScopedBookings().filter(function(b){ var y=trBkYear(b);
+    if(trRep.from&&(!y||y<+trRep.from)) return false; if(trRep.to&&(!y||y>+trRep.to)) return false;
+    if(trRep.purposes.length&&trRep.purposes.indexOf(b.purpose||"none")<0) return false; return true; });
+}
+function trBars(rows,valKey,fmtFn,unit){ // rows: [{label, ...}] -> single-series vertical bars, hover shows the value
+  var max=Math.max.apply(null,rows.map(function(r){ return r[valKey]||0; }).concat([0]));
+  if(!max) return '<div class="muted" style="padding:14px">Nothing to chart yet.</div>';
+  return '<div class="tr-bars">'+rows.map(function(r){ var v=r[valKey]||0, h=v?Math.max(2,v/max*100):0;
+    return '<div class="tr-bar" title="'+esc(r.label+": "+fmtFn(v)+(unit?" "+unit:"")+(r.tip?" · "+r.tip:""))+'"><span class="v">'+(v?esc(fmtFn(v,true)):"")+'</span><i style="height:'+h.toFixed(1)+'%"></i><span class="x">'+esc(r.label)+'</span></div>'; }).join("")+'</div>';
+}
+function trShort(n){ n=Math.round(n||0); return n>=10000?(Math.round(n/1000))+"k":n>=1000?(Math.round(n/100)/10)+"k":String(n); }
+function trTopList(title,arr,fmt){
+  return '<div class="panel tr-top5"><div class="tr-h" style="margin:0;padding:11px 14px 6px">'+title+'</div>'+(arr.length?arr.slice(0,8).map(function(a,i){
+    var max=arr[0].c||1; return '<div class="tr-top5r"><span class="nm">'+esc(a.n)+'</span><span class="bar"><i style="width:'+(a.c/max*100).toFixed(1)+'%"></i></span><span class="num">'+(fmt?fmt(a.c):a.c)+'</span></div>'; }).join(""):'<div class="muted" style="padding:6px 14px 12px">None yet.</div>')+'</div>';
+}
+function trRenderReports(){
+  var host=$("trReportView"); if(!host) return;
+  var allYears={}; trBookings.forEach(function(b){ var y=trBkYear(b); if(y) allYears[y]=1; });
+  var yrs=Object.keys(allYears).map(Number).sort();
+  var bks=trRepBookings(), ids={}; bks.forEach(function(b){ ids[b.id]=1; });
+  var seen={}, segs=[]; trSegs.forEach(function(s){ if(!ids[s.booking_id]) return; var k=trSegKey(s); if(seen[k]) return; seen[k]=1; segs.push(s); });
+  var scope=trScope();
+  // per year
+  var Y={}; function yr(y){ return Y[y]=Y[y]||{trips:0,flights:0,miles:0,usd:0,pts:0,other:{}}; }
+  bks.forEach(function(b){ var y=trBkYear(b)||"?", r=yr(y), sh=trShare(b,scope); r.trips++;
+    if(b.cash_amount!=null){ if((b.cash_currency||"USD")==="USD") r.usd+=Number(b.cash_amount)*sh; else r.other[b.cash_currency]=(r.other[b.cash_currency]||0)+Number(b.cash_amount)*sh; }
+    if(b.points_amount) r.pts+=Number(b.points_amount)*sh; });
+  segs.forEach(function(s){ var y=s.flight_year||(s.flight_date?+s.flight_date.slice(0,4):"?"), r=yr(y); r.flights++; r.miles+=s.distance_mi||0; });
+  var span=[]; if(yrs.length){ var lo=trRep.from?+trRep.from:yrs[0], hi=trRep.to?+trRep.to:yrs[yrs.length-1]; for(var y=lo;y<=hi;y++) span.push(y); }
+  var rows=span.map(function(y){ var r=Y[y]||{trips:0,flights:0,miles:0,usd:0,pts:0,other:{}};
+    return {label:String(y),miles:r.miles,usd:r.usd,pts:r.pts,flights:r.flights,trips:r.trips,tip:r.flights+" flight"+(r.flights===1?"":"s")}; });
+  var tot={trips:bks.length,flights:segs.length,miles:0,usd:0,pts:0,other:{}};
+  Object.keys(Y).forEach(function(k){ var r=Y[k]; tot.miles+=r.miles; tot.usd+=r.usd; tot.pts+=r.pts; for(var c in r.other) tot.other[c]=(tot.other[c]||0)+r.other[c]; });
+  // purpose breakdown
+  var P={}; bks.forEach(function(b){ var k=b.purpose||"none", r=P[k]=P[k]||{trips:0,flights:0,miles:0,usd:0,pts:0}, sh=trShare(b,scope); r.trips++;
+    (trBkSegs[b.id]||[]).forEach(function(s){ r.flights++; r.miles+=s.distance_mi||0; });
+    if(b.cash_amount!=null&&(b.cash_currency||"USD")==="USD") r.usd+=Number(b.cash_amount)*sh; if(b.points_amount) r.pts+=Number(b.points_amount)*sh; });
+  var pKeys=TR_PURPOSES.map(function(p){ return p[0]; }).concat(["none"]).filter(function(k){ return P[k]; });
+  var maxMi=Math.max.apply(null,pKeys.map(function(k){ return P[k].miles; }).concat([1]));
+  // top lists
+  function count(arr){ var m={}; arr.forEach(function(v){ if(v) m[v]=(m[v]||0)+1; }); return Object.keys(m).map(function(k){ return {n:k,c:m[k]}; }).sort(function(a,b){ return b.c-a.c||a.n.localeCompare(b.n); }); }
+  var dests=count(trFlightDests(bks).filter(function(d){ return !(trHomeAirport(d.code)); }).map(function(d){ var p=trAirportPlace(d.code); return p?trLabel(p):d.code; }));
+  var airlines=count(segs.map(function(s){ return s.airline; })), aircraft=count(segs.map(function(s){ return s.aircraft; }));
+  var airports=count([].concat.apply([],segs.map(function(s){ return [s.from_code,s.to_code]; }))).map(function(a){ return {n:trApLabel(a.n),c:a.c}; });
+  var routes=count(segs.filter(function(s){ return s.from_code&&s.to_code; }).map(function(s){ return [s.from_code,s.to_code].sort().join(" ↔ "); }));
+  // new countries by year (places + flight destinations, for the people selected above)
+  var firstCo={}, noYear={};
+  trAllPlaces.forEach(function(p){ var e=trEff[p.id]||{}, cc=p.kind==="state"?"US":p.country_code; if(!cc||!TX.cc[cc]) return;
+    scope.forEach(function(n){ var m=e[n]; if(!m||!m.been) return; var y=m.first_year?+m.first_year:null;
+      if(y){ if(!firstCo[cc]||y<firstCo[cc]) firstCo[cc]=y; } else noYear[cc]=1; }); });
+  var byYr={}; Object.keys(firstCo).forEach(function(cc){ (byYr[firstCo[cc]]=byYr[firstCo[cc]]||[]).push(TX.cc[cc].name); });
+  var undated=Object.keys(noYear).filter(function(cc){ return !firstCo[cc]; }).map(function(cc){ return TX.cc[cc].name; }).sort();
+
+  var who=trWho==="all"?"Family":esc(trWho);
+  var filt='<div class="panel" style="padding:12px 14px"><div class="row wrapf" style="gap:10px 16px;align-items:center">'+
+    '<span class="label" style="margin:0">Years</span><select id="rpFrom" class="mi" style="width:auto">'+['<option value="">first</option>'].concat(yrs.map(function(y){ return '<option'+(String(y)===trRep.from?" selected":"")+'>'+y+'</option>'; })).join("")+'</select>'+
+    '<span class="muted">to</span><select id="rpTo" class="mi" style="width:auto">'+['<option value="">latest</option>'].concat(yrs.map(function(y){ return '<option'+(String(y)===trRep.to?" selected":"")+'>'+y+'</option>'; })).join("")+'</select>'+
+    '<span class="label" style="margin:0 0 0 6px">Purpose</span><span class="tr-chips">'+TR_PURPOSES.concat([["none","Not set"]]).map(function(p){ var on=trRep.purposes.indexOf(p[0])>=0;
+      return '<button class="chip'+(on?" on":"")+'" data-rpp="'+p[0]+'" style="padding:4px 11px;font-size:12px">'+p[1]+'</button>'; }).join("")+'</span>'+
+    (trRep.from||trRep.to||trRep.purposes.length?'<button class="btn" id="rpClear" style="padding:5px 10px;font-size:12px">Clear filters</button>':'')+
+    '</div><div class="muted" style="margin-top:6px">Showing '+who+' · '+tot.trips+' booking'+(tot.trips===1?"":"s")+'. Costs are each person’s share when one person is selected.</div></div>';
+  var tiles='<div class="tr-stats">'+trTile("🧳",trN(tot.trips),"trips (bookings)","")+trTile("🛫",trN(tot.flights),"flights","")+
+    trTile("✈️",trN(tot.miles),"miles flown",tot.miles?(tot.miles/24901).toFixed(1)+"× around the Earth":"")+
+    trTile("💵",trMoney(tot.usd,"USD"),"cash spent (USD)",Object.keys(tot.other).map(function(c){ return "+ "+trMoney(tot.other[c],c); }).join(" · "))+
+    trTile("🎟️",trN(tot.pts),"miles & points redeemed","")+
+    trTile("📍",trN(dests.length),"destinations","not counting home")+'</div>';
+  var charts='<div class="tr-rgrid">'+
+    '<div class="panel"><div class="tr-h" style="margin:0;padding:11px 14px 0">Miles flown by year</div>'+trBars(rows,"miles",function(v,s){ return s?trShort(v):trN(v); },"miles")+'</div>'+
+    '<div class="panel"><div class="tr-h" style="margin:0;padding:11px 14px 0">Cash spent by year (USD)</div>'+trBars(rows,"usd",function(v,s){ return s?"$"+trShort(v):trMoney(v,"USD"); },"")+'</div>'+
+    '<div class="panel"><div class="tr-h" style="margin:0;padding:11px 14px 0">Flights by year</div>'+trBars(rows,"flights",function(v){ return String(v); },"flights")+'</div>'+
+    '<div class="panel"><div class="tr-h" style="margin:0;padding:11px 14px 0">Miles &amp; points redeemed by year</div>'+trBars(rows,"pts",function(v,s){ return s?trShort(v):trN(v); },"points")+'</div>'+
+    '</div>';
+  var ptable='<div class="tr-h">By purpose</div><div class="panel" style="overflow-x:auto"><table class="tr-tbl"><tr><th>Purpose</th><th>Trips</th><th>Flights</th><th>Miles</th><th style="width:28%"></th><th>Cash (USD)</th><th>Points</th></tr>'+
+    (pKeys.length?pKeys.map(function(k){ var r=P[k]; return '<tr><td>'+(k==="none"?'<span class="muted">Not set</span>':esc(trPurposeLabel(k)))+'</td><td class="num">'+r.trips+'</td><td class="num">'+r.flights+'</td><td class="num">'+trN(r.miles)+'</td>'+
+      '<td><span class="tr-hbar"><i style="width:'+(r.miles/maxMi*100).toFixed(1)+'%"></i></span></td><td class="num">'+(r.usd?trMoney(r.usd,"USD"):"—")+'</td><td class="num">'+(r.pts?trN(r.pts):"—")+'</td></tr>'; }).join("")
+      :'<tr><td colspan="7" class="muted" style="text-align:left">No bookings match.</td></tr>')+'</table></div>';
+  var tops='<div class="tr-rgrid3">'+trTopList("Top destinations",dests)+trTopList("Airlines",airlines)+trTopList("Airports",airports)+trTopList("Routes",routes)+trTopList("Aircraft",aircraft)+'</div>';
+  var cy=Object.keys(byYr).sort(function(a,b){ return b-a; });
+  var newco='<div class="tr-h">New countries by year</div><div class="panel">'+(cy.length||undated.length?cy.map(function(y){ return '<div class="tr-cyr"><b>'+y+'</b><span>'+byYr[y].sort().map(esc).join(", ")+'</span></div>'; }).join("")+
+    (undated.length?'<div class="tr-cyr"><b class="muted">No year</b><span class="muted">'+undated.map(esc).join(", ")+'</span></div>':''):'<div class="muted" style="padding:14px">Nothing yet.</div>')+
+    '<div class="muted" style="padding:8px 14px 12px">From your places and flights (all years, not just the filter above).</div></div>';
+  var trips=bks.slice().sort(function(a,b){ return trBkKey(b).localeCompare(trBkKey(a)); });
+  var ttable='<div class="tr-h">Trips</div><div class="panel" style="overflow-x:auto"><table class="tr-tbl"><tr><th>When</th><th style="text-align:left">Route</th><th style="text-align:left">Purpose</th><th>Who</th><th>Flights</th><th>Miles</th><th>Cost</th></tr>'+
+    (trips.length?trips.slice(0,300).map(function(b){ var ss=trBkSegs[b.id]||[], f0=ss[0], mi=ss.reduce(function(t,s){ return t+(s.distance_mi||0); },0);
+      return '<tr><td>'+esc(f0?trFlightWhen(f0):"—")+'</td><td style="text-align:left">'+esc(trRoute(b))+'</td><td style="text-align:left">'+(b.purpose?esc(trPurposeLabel(b.purpose)):'<span class="muted">—</span>')+'</td>'+
+        '<td><span class="tr-dots" style="justify-content:flex-end">'+(b.people||[]).map(function(n){ return '<i style="background:'+trColor(n)+'" title="'+esc(n)+'"></i>'; }).join("")+'</span></td>'+
+        '<td class="num">'+ss.length+'</td><td class="num">'+(mi?trN(mi):"")+'</td><td class="num">'+esc(trCostText(b))+'</td></tr>'; }).join("")
+      :'<tr><td colspan="7" class="muted" style="text-align:left">No bookings match.</td></tr>')+'</table></div>';
+  var exp='<div class="tr-h">Export</div><div class="panel" style="padding:12px 14px"><div class="row wrapf" style="gap:8px">'+
+    '<button class="btn" id="exFlights">Flights (CSV)</button><button class="btn" id="exBookings">Bookings (CSV)</button><button class="btn" id="exPlaces">Places (CSV)</button><button class="btn" id="exJson">Full backup (JSON)</button></div>'+
+    '<div class="muted" style="margin-top:8px">Exports include everything for the whole family, not just the filters above. CSV files open in Excel, Numbers or Google Sheets.</div></div>';
+  host.innerHTML=filt+tiles+charts+ptable+tops+newco+ttable+exp;
+  $("rpFrom").addEventListener("change",function(){ trRep.from=this.value; trRenderReports(); });
+  $("rpTo").addEventListener("change",function(){ trRep.to=this.value; trRenderReports(); });
+  host.querySelectorAll("[data-rpp]").forEach(function(b){ b.addEventListener("click",function(){ var k=this.getAttribute("data-rpp"), i=trRep.purposes.indexOf(k);
+    if(i>=0) trRep.purposes.splice(i,1); else trRep.purposes.push(k); trRenderReports(); }); });
+  if($("rpClear")) $("rpClear").addEventListener("click",function(){ trRep={from:"",to:"",purposes:[]}; trRenderReports(); });
+  $("exFlights").addEventListener("click",trExportFlights); $("exBookings").addEventListener("click",trExportBookings);
+  $("exPlaces").addEventListener("click",trExportPlaces); $("exJson").addEventListener("click",trExportJson);
+}
+function trHomeAirport(code){ var a=TX.ap[code]; return !!(a&&trMiles(TR_HOME.lat,TR_HOME.lng,a.lat,a.lng)<40); }
+
+/* ---- export ---- */
+function trCsv(rows){ return rows.map(function(r){ return r.map(function(v){ v=v==null?"":Array.isArray(v)?v.join("; "):String(v);
+  return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }).join(","); }).join("\r\n"); }
+function trDownload(name,text,type){
+  var blob=new Blob([type==="text/csv"?"﻿"+text:text],{type:type+";charset=utf-8"}), a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500); toast("Downloaded "+name);
+}
+function trStamp(){ return localDate(); }
+function trExportFlights(){
+  var bk={}; trBookings.forEach(function(b){ bk[b.id]=b; });
+  var rows=[["booking_id","confirmation","purpose","people","no_ticket_cost","booked_through","booking_date","booking_cash","currency","booking_points","points_program",
+    "flight_seq","flight_date","flight_year","airline","airline_code","flight_no","from","from_city","to","to_city","miles","aircraft","cabin","seat","layover_or_destination","booking_note","flight_note"]];
+  var destSet={}; trFlightDests().forEach(function(d){ destSet[d.s.id]=1; });
+  trSegs.slice().sort(function(a,b){ return trFlightKey(a).localeCompare(trFlightKey(b))||(a.seq-b.seq); }).forEach(function(s){ var b=bk[s.booking_id]||{};
+    function city(c){ var a=TX.ap[c]; return a?a.city:""; }
+    rows.push([s.booking_id,b.confirmation,trPurposeLabel(b.purpose),b.people,b.free_people,b.booked_through,b.booking_date,b.cash_amount,b.cash_currency,b.points_amount,b.points_program,
+      s.seq,s.flight_date,s.flight_year,s.airline,s.airline_code,s.flight_no,s.from_code,city(s.from_code),s.to_code,city(s.to_code),s.distance_mi,s.aircraft,trCabinLabel(s.cabin)==="—"?"":trCabinLabel(s.cabin),s.seat,
+      destSet[s.id]?"destination":"layover",b.note,s.note]); });
+  trDownload("ledger-flights-"+trStamp()+".csv",trCsv(rows),"text/csv");
+}
+function trExportBookings(){
+  var rows=[["booking_id","first_date","route","purpose","people","no_ticket_cost","flights","miles","confirmation","ticket_no","booked_through","booking_date","cash","currency","points","points_program","note"]];
+  trBookings.slice().sort(function(a,b){ return trBkKey(a).localeCompare(trBkKey(b)); }).forEach(function(b){ var ss=trBkSegs[b.id]||[], f0=ss[0];
+    rows.push([b.id,f0?(f0.flight_date||f0.flight_year):"",trRoute(b),trPurposeLabel(b.purpose),b.people,b.free_people,ss.length,ss.reduce(function(t,s){ return t+(s.distance_mi||0); },0),
+      b.confirmation,b.ticket_no,b.booked_through,b.booking_date,b.cash_amount,b.cash_currency,b.points_amount,b.points_program,b.note]); });
+  trDownload("ledger-bookings-"+trStamp()+".csv",trCsv(rows),"text/csv");
+}
+function trExportPlaces(){
+  var rows=[["place","kind","country","state","person","been","want","fave","first_year","source","lat","lng","note"]];
+  trAllPlaces.slice().sort(function(a,b){ return trLabel(a).localeCompare(trLabel(b)); }).forEach(function(p){ var e=trEff[p.id]||{}, mk=trMk[p.id]||{};
+    TR_PEOPLE.forEach(function(x){ var m=e[x.n]; if(!m) return; var marked=mk[x.n]&&(mk[x.n].been||mk[x.n].want||mk[x.n].fave);
+      rows.push([trLabel(p),TR_KIND[p.kind],trCountryName(p.kind==="state"?"US":p.country_code),p.region&&TX.st[p.region]?TX.st[p.region]:"",x.n,m.been?"yes":"",m.want?"yes":"",m.fave?"yes":"",m.first_year||"",
+        marked&&m.fly?"marked + flights":m.fly?"flights":"marked",p.lat,p.lng,p.note]); }); });
+  trDownload("ledger-places-"+trStamp()+".csv",trCsv(rows),"text/csv");
+}
+function trExportJson(){
+  var segs=trSegs.map(function(s){ var o={}; for(var k in s) if(k!=="people") o[k]=s[k]; return o; });
+  var out={exported_at:new Date().toISOString(),app:"The Ledger — Travel",travel_places:trPlaces,travel_marks:trMarks,travel_bookings:trBookings,travel_segments:segs};
+  trDownload("ledger-travel-backup-"+trStamp()+".json",JSON.stringify(out,null,1),"application/json");
+}
+
 /* ---- page ---- */
 function trSkeleton(){
   $("viewTravel").innerHTML=
@@ -5227,7 +5452,7 @@ function trSkeleton(){
       '<div class="card tr-side"><div class="tr-search"><div class="label">Add a place</div><input id="trQ" class="field" autocomplete="off" placeholder="City, state, country, park, landmark…">'+
       '<div id="trQS" class="tr-sug hidden"></div></div><div id="trEditor"></div><div id="trList"></div></div></div>'+
       '<div id="trStats"></div></div>'+
-    '<div id="trFlightView" class="hidden"></div>';
+    '<div id="trFlightView" class="hidden"></div><div id="trReportView" class="hidden"></div>';
   trSuggest($("trQ"),$("trQS"),function(q){ return TX?trSearch(q):[]; },function(it){
     $("trQ").value=""; if(it.saved){ trOpenPlace(it.saved); if(it.saved.lat!=null) trMap.setView([it.saved.lat,it.saved.lng],Math.max(trMap.getZoom(),5)); return; }
     var p=trItemToPlace(it.item); trStartEdit(p,false);
@@ -5245,7 +5470,7 @@ function trRenderTop(){
   $("trWho").innerHTML='<button class="chip'+(trWho==="all"?" on":"")+'" data-trw="all">Family</button>'+TR_PEOPLE.map(function(x){ var on=trWho===x.n;
     return '<button class="chip'+(on?" on":"")+'" data-trw="'+x.n+'"'+(on?' style="background:'+x.c+';border-color:'+x.c+'"':'')+'><span class="tr-pc"><i style="background:'+x.c+'"></i>'+x.n+'</span></button>'; }).join("");
   $("trShowC").innerHTML=[["been","✓ Been"],["want","★ Want"],["fave","♥ Fave"]].map(function(s){ return '<button class="chip'+(trShow[s[0]]?" on":"")+'" data-trs="'+s[0]+'">'+s[1]+'</button>'; }).join("");
-  $("trSubC").innerHTML='<button class="chip'+(trSub==="map"?" on":"")+'" data-trsub="map">Map &amp; places</button><button class="chip'+(trSub==="flights"?" on":"")+'" data-trsub="flights">Flights</button>';
+  $("trSubC").innerHTML='<button class="chip'+(trSub==="map"?" on":"")+'" data-trsub="map">Map &amp; places</button><button class="chip'+(trSub==="flights"?" on":"")+'" data-trsub="flights">Flights</button><button class="chip'+(trSub==="reports"?" on":"")+'" data-trsub="reports">Reports</button>';
   $("viewTravel").querySelectorAll("[data-trw]").forEach(function(b){ b.addEventListener("click",function(){ trWho=this.getAttribute("data-trw");
     if(trFF&&!trFF.id&&!trFF.segs.some(trSegFilled)) trFF=null; trRenderAll(); }); });
   $("viewTravel").querySelectorAll("[data-trs]").forEach(function(b){ b.addEventListener("click",function(){ var k=this.getAttribute("data-trs"); trShow[k]=!trShow[k]; trRenderAll(); }); });
@@ -5256,7 +5481,9 @@ function trRenderAll(){
   trRenderTop();
   $("trMapView").classList.toggle("hidden",trSub!=="map");
   $("trFlightView").classList.toggle("hidden",trSub!=="flights");
+  $("trReportView").classList.toggle("hidden",trSub!=="reports");
   if(trSub==="map"){ trRenderMap(); trRenderEditor(); trRenderList(); trRenderStats(); setTimeout(function(){ if(trMap) trMap.invalidateSize(); },60); }
+  else if(trSub==="reports") trRenderReports();
   else trRenderFlights();
 }
 async function renderTravel(){
@@ -5276,7 +5503,7 @@ async function renderTravel(){
   }
   if(trMissing){
     $("trMsg").innerHTML='<div class="card" style="padding:18px 20px;font-size:13.5px;line-height:1.6;margin-bottom:14px"><b>Travel needs its database tables.</b> Run the SQL in <b>Travel_Guide.md</b> in Supabase, then tap Refresh.</div>';
-    $("trMapView").classList.add("hidden"); $("trFlightView").classList.add("hidden"); return;
+    $("trMapView").classList.add("hidden"); $("trFlightView").classList.add("hidden"); $("trReportView").classList.add("hidden"); return;
   }
   trInitMap(); trRenderAll();
 }
