@@ -193,7 +193,8 @@
   .tr-seg{border:1px solid var(--line);border-radius:11px;padding:10px 12px 0;margin-bottom:10px;background:var(--paper)}
   .tr-seg .field{background:var(--card)}
   .tr-seg-n{font-size:12.5px;font-weight:800;color:var(--teal)}
-  .tr-bk{margin-bottom:10px}
+  .tr-bk{margin-bottom:10px;overflow:visible}
+  .tr-bk-h{border-radius:14px 14px 0 0}
   .tr-bk-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:11px 14px;background:var(--paper);border-bottom:1px solid var(--line)}
   .tr-bk-t{font-weight:800;font-size:14px}
   .tr-bk-r{display:flex;align-items:center;gap:10px;flex-shrink:0}
@@ -218,6 +219,15 @@
   .tr-tagp{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px;background:var(--teal-soft);color:var(--teal);margin:0 3px 2px 0;vertical-align:2px;white-space:nowrap}
   .tr-tagp.on{font-size:12.5px;padding:4px 6px 4px 11px}
   .tr-tagp button{border:none;background:none;color:var(--teal);font-size:15px;line-height:1;cursor:pointer;padding:0 3px}
+  .tr-qt{display:inline;font-weight:400}
+  .tr-qtp{padding:2px 4px 2px 8px}
+  .tr-qtp button{border:none;background:none;color:var(--teal);font-size:13px;line-height:1;cursor:pointer;padding:0 2px;opacity:.55}
+  .tr-qtp button:hover{opacity:1}
+  .tr-qtadd{font-size:11px;font-weight:700;padding:2px 9px;border-radius:12px;border:1px dashed var(--teal);background:none;color:var(--teal);cursor:pointer;vertical-align:2px;font-family:inherit}
+  .tr-qtadd:hover{background:var(--teal-soft)}
+  .tr-qtbox{display:inline-block;position:relative;vertical-align:1px}
+  .tr-qtin{width:150px;font-size:12.5px;padding:3px 8px;border:1px solid var(--teal);border-radius:12px;font-family:inherit;background:var(--card);color:var(--ink)}
+  .tr-qtbox .tr-sug{min-width:220px;font-weight:400}
   .tr-tagrow{display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid var(--paper)}
   .tr-cloud{display:flex;flex-wrap:wrap;gap:6px;padding:12px 14px}
   .tr-cloud span{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:4px 10px;font-size:12.5px;font-weight:650}
@@ -5096,12 +5106,12 @@ function trRenderFlights(){
   if(trLogF==="untagged") bks=bks.filter(function(b){ return !trBkTags(b).length; });
   var log='<div class="row between wrapf" style="gap:8px;margin:20px 0 4px"><div class="tr-h" style="margin:0">Flight log</div><span class="tr-chips">'+
       '<button class="chip'+(trLogF==="all"?" on":"")+'" data-logf="all" style="padding:4px 11px;font-size:12px">All bookings</button>'+
-      '<button class="chip'+(trLogF==="untagged"?" on":"")+'" data-logf="untagged" style="padding:4px 11px;font-size:12px">Untagged ('+nUn+')</button></span></div>'+(bks.length?bks.map(function(b){
+      '<button class="chip'+(trLogF==="untagged"?" on":"")+'" data-logf="untagged" id="trUnChip" style="padding:4px 11px;font-size:12px">Untagged ('+nUn+')</button></span></div>'+(bks.length?bks.map(function(b){
       var ss=trBkSegs[b.id]||[], f0=ss[0], mi=ss.reduce(function(t,s){ return t+(s.distance_mi||0); },0), cost=trCostText(b), sh=trShare(b,trScope());
       if(cost&&sh!==1) cost=(sh===0?"no cost for "+trWho:trWho+"’s share: "+trCostText({cash_amount:b.cash_amount!=null?Math.round(b.cash_amount*sh*100)/100:null,cash_currency:b.cash_currency,points_amount:b.points_amount?Math.round(b.points_amount*sh):null,points_program:b.points_program}))+" (of "+cost+")";
       var freeTxt=(b.free_people||[]).filter(function(n){ return (b.people||[]).indexOf(n)>=0; });
       var meta=[b.confirmation?"Conf. "+esc(b.confirmation):"",b.booked_through?esc(b.booked_through):"",b.booking_date?"booked "+esc(trFlightWhen({flight_date:b.booking_date})):""].filter(Boolean).join(" · ");
-      return '<div class="panel tr-bk"><div class="tr-bk-h"><div style="min-width:0"><div class="tr-bk-t">'+esc(f0?trFlightWhen(f0):"—")+' · '+esc(trRoute(b))+' '+trTagPills(trBkTags(b))+'</div>'+
+      return '<div class="panel tr-bk"><div class="tr-bk-h"><div style="min-width:0"><div class="tr-bk-t">'+esc(f0?trFlightWhen(f0):"—")+' · '+esc(trRoute(b))+' <span class="tr-qt" data-qt="'+b.id+'">'+trQtHtml(b)+'</span></div>'+
         '<div class="muted">'+[ss.length+" flight"+(ss.length===1?"":"s"),mi?trN(mi)+" mi":"",meta,freeTxt.length?esc(freeTxt.join(", "))+": no ticket cost":""].filter(Boolean).join(" · ")+(b.note?'<br>'+esc(b.note):'')+'</div></div>'+
         '<div class="tr-bk-r"><span class="num" style="font-weight:800">'+esc(cost)+'</span><span class="tr-dots">'+(b.people||[]).map(function(n){ return '<i style="background:'+trColor(n)+'" title="'+esc(n)+'"></i>'; }).join("")+'</span>'+
         '<button class="btn" data-bke="'+b.id+'" style="padding:4px 9px;font-size:11.5px">edit</button></div></div>'+
@@ -5142,6 +5152,7 @@ function trCostSection(bks){
   return '<div class="tr-h">What we’ve paid'+who+'</div><div class="muted" style="margin-bottom:8px">Each booking’s price is counted once'+(trWho==="all"?'':', and '+esc(trWho)+' gets an even share of it, split among the travelers who paid')+'. Currencies are kept separate (no conversion).</div>'+tiles+table+cl;
 }
 function trWireFlights(){
+  document.querySelectorAll("#trFlightView [data-qt]").forEach(trWireQt);
   var F=trFF;
   function keep(){
     F.conf=$("bkConf").value; F.ticket=$("bkTicket").value; F.through=$("bkThrough").value; F.bdate=$("bkDate").value;
@@ -5270,7 +5281,8 @@ function trHasTag(b,t){ var k=trTagKey(t); return trBkTags(b).some(function(x){ 
 function trTagPills(tags){ return tags.map(function(t){ return '<span class="tr-tagp">'+esc(t)+'</span>'; }).join(""); }
 function trTagSearch(have){ return function(q){ var k=trTagKey(q), out=[];
   trAllTags().forEach(function(x){ if(have.some(function(h){ return trTagKey(h)===trTagKey(x.n); })) return; if(!k||trTagKey(x.n).indexOf(k)>=0) out.push({label:x.n,sub:x.c?x.c+" trip"+(x.c===1?"":"s"):"",name:x.n}); });
-  if(k&&!trAllTags().some(function(x){ return trTagKey(x.n)===k; })) out=out.slice(0,9); out.push({label:"Create \u201c"+String(q).trim()+"\u201d",sub:"new tag",name:String(q).trim()});
+  out=out.slice(0,9);
+  if(k&&!trAllTags().some(function(x){ return trTagKey(x.n)===k; })) out.push({label:"Create \u201c"+String(q).trim()+"\u201d",sub:"new tag",name:String(q).trim()});
   return out; }; }
 function trCityCands(){ if(TX.cityCands) return TX.cityCands; var m={};
   TX.items.forEach(function(o){ if(o.kind!=="city") return; (m[o.cc+"|"+o.nm]=m[o.cc+"|"+o.nm]||[]).push(o); }); TX.cityCands=m; return m; }
@@ -5453,6 +5465,35 @@ function trRenderReports(){
     await trRetag(ids,function(tags){ return tags.filter(function(x){ return trTagKey(x)!==trTagKey(old); }); },"Deleted \u201c"+old+"\u201d"); }); });
   $("exFlights").addEventListener("click",trExportFlights); $("exBookings").addEventListener("click",trExportBookings);
   $("exPlaces").addEventListener("click",trExportPlaces); $("exJson").addEventListener("click",trExportJson);
+}
+/* ---- quick tagging right on the flight log (the only edit allowed without opening the booking) ---- */
+function trQtHtml(b){
+  return trBkTags(b).map(function(t,i){ return '<span class="tr-tagp tr-qtp">'+esc(t)+'<button data-qtx="'+i+'" title="Remove this tag">\u00d7</button></span>'; }).join("")+
+    '<button class="tr-qtadd" data-qtadd="1" title="Add a tag">+ tag</button>';
+}
+function trWireQt(span){
+  var id=span.getAttribute("data-qt"), b=null; trBookings.forEach(function(x){ if(x.id===id) b=x; }); if(!b) return;
+  span.querySelectorAll("[data-qtx]").forEach(function(x){ x.addEventListener("click",function(ev){ ev.stopPropagation();
+    var tags=trBkTags(b).slice(); tags.splice(+this.getAttribute("data-qtx"),1); trQuickTag(b,tags,span); }); });
+  var add=span.querySelector("[data-qtadd]");
+  if(add) add.addEventListener("click",function(ev){ ev.stopPropagation();
+    add.outerHTML='<span class="tr-search tr-qtbox"><input class="tr-qtin" autocomplete="off" placeholder="Tag\u2026"><div class="tr-sug hidden"></div></span>';
+    var inp=span.querySelector(".tr-qtin"), box=span.querySelector(".tr-qtbox .tr-sug"), done=false;
+    trSuggest(inp,box,trTagSearch(trBkTags(b)),function(it){ done=true; var t=trCanonTag(it.name); if(!t) return;
+      if(trHasTag(b,t)){ span.innerHTML=trQtHtml(b); trWireQt(span); return; }
+      trQuickTag(b,trBkTags(b).concat([t]),span); });
+    inp.addEventListener("keydown",function(e){ if(e.key==="Escape"){ done=true; span.innerHTML=trQtHtml(b); trWireQt(span); } });
+    inp.addEventListener("blur",function(){ setTimeout(function(){ if(!done&&!inp.value.trim()){ span.innerHTML=trQtHtml(b); trWireQt(span); } },250); });
+    inp.focus(); inp.dispatchEvent(new Event("input"));   // show every tag right away
+  });
+}
+async function trQuickTag(b,tags,span){
+  var prev=trBkTags(b).slice();
+  b.tags=tags; span.innerHTML=trQtHtml(b); trWireQt(span);   // update in place, so the page doesn't move
+  var r=await fetch(SUPABASE_URL+"/rest/v1/travel_bookings?id=eq."+b.id,{method:"PATCH",headers:headers({Prefer:"return=minimal"}),body:JSON.stringify({tags:tags})});
+  if(!r.ok){ b.tags=prev; span.innerHTML=trQtHtml(b); trWireQt(span); toast("Couldn\u2019t save the tag ("+r.status+")"); return; }
+  toast(tags.length>prev.length?"Tagged \u201c"+tags[tags.length-1]+"\u201d":"Tag removed");
+  var chip=$("trUnChip"); if(chip){ var n=trScopedBookings().filter(function(x){ return !trBkTags(x).length; }).length; chip.textContent="Untagged ("+n+")"; }
 }
 async function trRetag(ids,fn,msg){
   if(!ids.length){ toast("Select some trips first"); return; }
